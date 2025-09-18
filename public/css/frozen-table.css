@@ -1,0 +1,448 @@
+/* ==================== 冻结表格样式 ==================== */
+
+/* 冻结表格优先级规则 - 覆盖其他CSS文件的样式 */
+.standards-table-container .left-table td,
+.standards-table-container .content-table td,
+.standards-table-container .left-table tr,
+.standards-table-container .content-table tr {
+    height: 50px !important;
+    min-height: 50px !important;
+    max-height: 50px !important;
+    line-height: 1.2 !important;
+    vertical-align: middle !important;
+    box-sizing: border-box !important;
+    padding: 7px 15px !important; /* 减少padding以确保总高度一致 */
+    border-top: 0 !important;
+    border-bottom: 1px solid #e9ecef !important;
+}
+
+/* 强制统一所有表格元素的高度 */
+.standards-table-container table {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+}
+
+.standards-table-container tbody tr {
+    height: 50px !important;
+    min-height: 50px !important;
+    max-height: 50px !important;
+}
+
+.standards-table-container tbody td {
+    height: 50px !important;
+    min-height: 50px !important;
+    max-height: 50px !important;
+    padding: 7px 15px !important;
+    vertical-align: middle !important;
+    box-sizing: border-box !important;
+}
+
+/* 特别针对计算行的样式 */
+.standards-table-container .calculated-row td {
+    height: 50px !important;
+    min-height: 50px !important;
+    max-height: 50px !important;
+    padding: 7px 15px !important;
+    vertical-align: middle !important;
+    box-sizing: border-box !important;
+    background: #f1f3f4 !important;
+    border-top: 0 !important;
+}
+
+/* 院校类别分隔线样式 */
+.standards-table-container .school-type-separator td {
+    border-top: 3px solid #343a40 !important; /* 粗黑线分隔不同院校类别 */
+}
+
+/* 第一个院校类别不需要上边框 */
+.standards-table-container tbody tr:first-child td {
+    border-top: 0 !important;
+}
+
+/* 确保左侧表格和右侧表格的分隔线对齐 */
+.left-table .school-type-separator td,
+.content-table .school-type-separator td {
+    border-top: 3px solid #343a40 !important;
+}
+
+/* 重置所有可能的样式干扰 */
+.standards-table-container * {
+    box-sizing: border-box !important;
+}
+
+.standards-table-container td:before,
+.standards-table-container td:after,
+.standards-table-container tr:before,
+.standards-table-container tr:after {
+    display: none !important;
+}
+
+/* 表格容器 */
+.standards-table-container {
+    position: relative;
+    overflow: hidden;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    border: 1px solid #e9ecef;
+}
+
+/* 滚动表格包装器 */
+.scrollable-table-wrapper {
+    position: relative;
+    height: 600px;
+    overflow: hidden;
+}
+
+/* 冻结的左上角 */
+.frozen-corner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 30;
+    background: #f8f9fa;
+    border-right: 3px solid #343a40;
+    border-bottom: 2px solid #dee2e6;
+    width: 300px;
+}
+
+/* 冻结的表头 */
+.frozen-header {
+    position: absolute;
+    top: 0;
+    left: 300px;
+    right: 0;
+    z-index: 20;
+    background: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+/* 冻结的左侧列 */
+.frozen-left {
+    position: absolute;
+    top: 84px; /* 表头高度：42px × 2行 = 84px */
+    left: 0;
+    bottom: 0;
+    z-index: 10;
+    background: #f8f9fa;
+    border-right: 3px solid #343a40;
+    width: 300px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* 主要内容区域 */
+.scrollable-content {
+    position: absolute;
+    top: 84px; /* 表头高度：42px × 2行 = 84px */
+    left: 300px;
+    right: 0;
+    bottom: 0;
+    overflow: auto;
+    background: white;
+}
+
+/* 表格基础样式 */
+.corner-table,
+.header-table,
+.left-table,
+.content-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: auto;
+    min-width: 100%;
+}
+
+/* 确保表格对齐 */
+.corner-table,
+.left-table {
+    width: 100%;
+}
+
+/* 确保内容表格可以水平滚动 */
+.header-table,
+.content-table {
+    min-width: 1200px; /* 增加最小宽度以确保可以滚动 */
+}
+
+/* 表格单元格基础样式 - 统一所有数据行高度 */
+.left-table td,
+.content-table td {
+    padding: 7px 15px !important; /* 减少padding */
+    text-align: center;
+    vertical-align: middle !important;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 14px;
+    min-width: 120px;
+    height: 50px !important; /* 统一的数据行高度 */
+    min-height: 50px !important;
+    max-height: 50px !important;
+    box-sizing: border-box !important;
+    line-height: 1.2 !important;
+    border-top: 0 !important;
+}
+
+/* 表头单元格样式 */
+.corner-table th,
+.header-table th {
+    padding: 12px 15px;
+    text-align: center;
+    vertical-align: middle;
+    border-bottom: 1px solid #dee2e6;
+    font-size: 14px;
+    min-width: 120px;
+    height: 42px; /* 表头行高度 */
+    box-sizing: border-box;
+}
+
+/* 表头样式 */
+.corner-table th,
+.header-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 1px solid #dee2e6;
+    height: 42px;
+    line-height: 1.2;
+    box-sizing: border-box;
+    vertical-align: middle;
+}
+
+/* rowspan=2的表头单元格样式 */
+.corner-table th[rowspan="2"] {
+    height: 84px; /* 两行的总高度 */
+    vertical-align: middle;
+}
+
+/* 确保表头第一行和第二行高度一致 */
+.corner-table thead tr th,
+.header-table thead tr th {
+    vertical-align: middle;
+}
+
+/* 左上角表头特殊样式 */
+.corner-table th:first-child {
+    border-right: 1px solid #dee2e6;
+}
+
+/* 确保表头对齐 */
+.corner-table thead,
+.header-table thead {
+    height: 84px; /* 两行表头的总高度 */
+}
+
+/* 左侧列样式 */
+.left-table td {
+    background: #f8f9fa !important;
+    font-weight: 500;
+    border-right: 1px solid #e9ecef;
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: initial;
+    height: 50px !important;
+    min-height: 50px !important;
+    max-height: 50px !important;
+    padding: 7px 15px !important; /* 统一padding */
+    border-top: 0 !important;
+}
+
+/* 内容表格样式 */
+.content-table td {
+    background: white !important;
+    border-right: 1px solid #e9ecef;
+    white-space: nowrap;
+    height: 50px !important;
+    min-height: 50px !important;
+    max-height: 50px !important;
+    padding: 7px 15px !important; /* 统一padding */
+    border-top: 0 !important;
+}
+
+/* 表格行样式 - 确保所有行高度一致 */
+.left-table tr,
+.content-table tr {
+    height: 50px !important;
+    min-height: 50px !important;
+    max-height: 50px !important;
+}
+
+/* 用房类型特殊样式 */
+.room-type {
+    text-align: left !important;
+    padding-left: 15px !important;
+}
+
+.room-type.sub-type {
+    padding-left: 30px !important;
+    font-style: italic;
+    color: #6c757d;
+}
+
+/* 输入框样式 */
+.content-table input:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+}
+
+/* 计算行样式 */
+.calculated-row td {
+    background: #f1f3f4 !important;
+    font-weight: 600;
+    color: #495057;
+}
+
+/* 学校类型分组样式 */
+.school-type-group td {
+    background: #e8f4f8 !important;
+    font-weight: 700;
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db !important;
+}
+
+/* 院校类别分割线 */
+.school-type-separator {
+    border-top: 3px solid #343a40 !important;
+}
+
+.school-type-separator td {
+    border-top: 3px solid #343a40 !important;
+}
+
+/* 院校类别单元格样式 */
+.school-type {
+    background: #e8f4f8 !important;
+    font-weight: 700;
+    color: #2c3e50;
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* 列宽设置 */
+.corner-table th:nth-child(1),
+.left-table td:nth-child(1) {
+    width: 140px;
+    min-width: 140px;
+}
+
+.corner-table th:nth-child(2),
+.left-table td:nth-child(2) {
+    width: 160px;
+    min-width: 160px;
+}
+
+.header-table th,
+.content-table td {
+    width: 160px;
+    min-width: 160px;
+}
+
+/* 特殊列宽调整 */
+.header-table th:first-child,
+.content-table td:first-child {
+    width: 200px;
+    min-width: 200px;
+}
+
+/* 输入框特殊样式 */
+.content-table input {
+    width: calc(100% - 6px) !important; /* 减少宽度以适应新的padding */
+    min-width: 100px;
+    padding: 8px 6px !important; /* 减少padding */
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 13px;
+    text-align: center;
+    background: white;
+    box-sizing: border-box !important;
+    height: 34px !important; /* 减少输入框高度 */
+    min-height: 34px !important;
+    max-height: 34px !important;
+    vertical-align: middle !important;
+    line-height: 1.2 !important;
+    margin: 0 !important;
+}
+
+/* 滚动条样式 */
+.frozen-left::-webkit-scrollbar,
+.frozen-header::-webkit-scrollbar,
+.scrollable-content::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.frozen-left::-webkit-scrollbar-track,
+.frozen-header::-webkit-scrollbar-track,
+.scrollable-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 5px;
+}
+
+.frozen-left::-webkit-scrollbar-thumb,
+.frozen-header::-webkit-scrollbar-thumb,
+.scrollable-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 5px;
+}
+
+.frozen-left::-webkit-scrollbar-thumb:hover,
+.frozen-header::-webkit-scrollbar-thumb:hover,
+.scrollable-content::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* 确保滚动区域有足够的空间 */
+.frozen-header {
+    scrollbar-width: thin;
+    scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+.scrollable-content {
+    scrollbar-width: thin;
+    scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+/* 右侧表头特殊样式 */
+.header-table th[rowspan="2"] {
+    height: 84px; /* 两行的总高度 */
+    vertical-align: middle;
+}
+
+.header-table th[colspan] {
+    height: 42px; /* 单行高度 */
+    vertical-align: middle;
+}
+
+.header-table thead tr:nth-child(2) th {
+    height: 42px; /* 第二行单元格高度 */
+    vertical-align: middle;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .frozen-corner,
+    .frozen-left {
+        width: 200px;
+    }
+    
+    .frozen-header,
+    .scrollable-content {
+        left: 200px;
+    }
+    
+    .corner-table th,
+    .left-table td {
+        font-size: 12px;
+        padding: 8px 6px;
+    }
+    
+    .header-table th,
+    .content-table td {
+        width: 110px;
+        min-width: 110px;
+        font-size: 12px;
+        padding: 8px 6px;
+    }
+}

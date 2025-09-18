@@ -1,0 +1,77 @@
+/* ==================== 学生人数输入字段样式 ==================== */
+
+/* === 基础表单行布局 === */
+.student-category .form-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    margin-bottom: 25px; /* 增加底部间距以容纳错误信息 */
+}
+
+/* === 通用字段样式 === */
+.student-category .form-group {
+    flex: 1;
+    min-width: 140px;
+    max-width: 180px;
+}
+
+.student-category .form-group label {
+    font-size: 13px;
+    line-height: 1.2;
+    margin-bottom: 6px;
+    display: block;
+}
+
+.student-category .form-group input {
+    font-size: 14px;
+    padding: 8px 10px;
+    height: auto;
+}
+
+.student-category .form-group small {
+    font-size: 11px;
+    line-height: 1.2;
+    margin-top: 3px;
+}
+
+/* === 留学生行特殊布局 === */
+/* 留学生只有4个字段，需要调整宽度比例使其与全日制5个字段总宽度保持一致 */
+.student-category .international-row .form-group {
+    flex: 1.25; /* 4 × 1.25 = 5，匹配全日制行的总比例 */
+    min-width: 175px;
+    max-width: 245px;
+}
+
+/* === 总计字段特殊样式 === */
+.student-category .form-group:last-child {
+    flex: 1.2;
+    max-width: 200px;
+}
+
+.student-category .form-group:last-child input {
+    font-weight: bold;
+    text-align: center;
+    font-size: 15px;
+}
+
+/* === 计算字段样式 === */
+.calculated-field {
+    font-weight: bold !important;
+    text-align: center !important;
+}
+
+.calculated-field[style*="background: #e8f4fd"] {
+    color: #2980b9 !important;
+    font-size: 16px !important;
+}
+
+.calculated-field[style*="background: #e8f5e8"] {
+    color: #27ae60 !important;
+    font-size: 16px !important;
+}
+
+.calculated-field[style*="background: #f8f9fa"] {
+    color: #2c3e50 !important;
+    font-size: 18px !important;
+    font-weight: 900 !important;
+}

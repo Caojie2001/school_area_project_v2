@@ -1,0 +1,126 @@
+/* ==================== 移动端适配样式 ==================== */
+
+/* === 平板端适配 (1200px以下) === */
+@media (max-width: 1200px) {
+    .student-category .form-group {
+        min-width: 120px;
+        max-width: 160px;
+    }
+    
+    .student-category .form-group label {
+        font-size: 12px;
+    }
+    
+    .student-category .form-group input {
+        font-size: 13px;
+        padding: 6px 8px;
+    }
+}
+
+/* === 移动端适配 (768px以下) === */
+@media (max-width: 768px) {
+    /* === 侧边栏和主内容区域 === */
+    .sidebar {
+        transform: translateX(-100%);
+        width: 100%;
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
+    .main-content {
+        margin-left: 0;
+    }
+
+    .mobile-menu-btn {
+        display: block !important;
+    }
+
+    /* === 页面布局 === */
+    .content-header {
+        padding: 20px;
+    }
+
+    .content-body {
+        padding: 20px;
+    }
+
+    /* === 表单样式 === */
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    /* 特殊补助行在移动端仍保持三列布局 */
+    .subsidy-item .form-row {
+        grid-template-columns: 2fr 1fr auto;
+        gap: 10px;
+    }
+    
+    .form-actions .btn {
+        width: 100%;
+        margin: 5px 0;
+    }
+
+    /* === 搜索栏 === */
+    .search-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    /* === 结果显示优化 === */
+    .summary-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .analysis-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .area-details > div {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        padding: 5px 8px;
+        font-size: 0.7rem;
+    }
+
+    /* === 年份选择器 === */
+    .year-grid-container {
+        width: 95%;
+        padding: 15px;
+    }
+
+    .year-grid {
+        gap: 8px;
+    }
+
+    .year-item {
+        padding: 12px 8px;
+        font-size: 14px;
+    }
+
+    .year-nav-btn {
+        width: 35px;
+        height: 35px;
+        font-size: 16px;
+    }
+
+    /* === 学生人数字段 === */
+    .student-category .form-row {
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 30px; /* 移动端增加更多底部间距以容纳错误信息 */
+    }
+    
+    .student-category .form-group {
+        min-width: calc(50% - 4px);
+        max-width: calc(50% - 4px);
+        margin-bottom: 15px; /* 增加字段之间的间距 */
+    }
+    
+    .student-category .form-group:last-child {
+        min-width: 100%;
+        max-width: 100%;
+    }
+}

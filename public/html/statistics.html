@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测算统计 - 高校建筑面积缺口计算器</title>
+    <!-- 引入模块化CSS样式 -->
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边栏容器 -->
+        <div id="sidebarContainer"></div>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <div class="page-content active">
+                <!-- 页面头部容器 -->
+                <div id="pageHeaderContainer"></div>
+                
+                <!-- 页面内容容器 -->
+                <div class="content-body" id="pageContentContainer">
+                    <!-- 数据统计卡片 -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h4>现状建筑总面积</h4>
+                            <div class="stat-value" id="overviewCurrentArea">0.00</div>
+                            <div class="stat-unit">(m²)</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>测算建筑总面积</h4>
+                            <div class="stat-value" id="overviewRequiredArea">0.00</div>
+                            <div class="stat-unit">(m²)</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>测算建筑面积总缺额(不含特殊补助)</h4>
+                            <div class="stat-value" id="overviewGapWithoutSubsidy">0.00</div>
+                            <div class="stat-unit">(m²)</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>测算建筑面积总缺额(含特殊补助)</h4>
+                            <div class="stat-value" id="overviewGapWithSubsidy">0.00</div>
+                            <div class="stat-unit">(m²)</div>
+                        </div>
+                    </div>
+
+                    <!-- 筛选区域 -->
+                    <div class="card">
+                        <div class="search-bar">
+                            <select id="overviewYearFilter" class="search-input" style="width: 20%; min-width: 120px;">
+                                <!-- 年份选项将通过JavaScript动态加载 -->
+                            </select>
+                            <select id="overviewUserTypeFilter" class="search-input" style="width: 25%; min-width: 150px;">
+                                <option value="school">所有高校用户</option>
+                                <option value="construction_center" selected>基建中心</option>
+                            </select>
+                            <button class="btn btn-primary" onclick="handleSearchClick()" style="width: 10%; min-width: 70px; margin-left: 8px;">查找</button>
+                        </div>
+                        
+                        <!-- 记录总数显示 -->
+                        <div id="overviewRecordCount" class="record-count" style="display: none; margin-top: 15px; padding: 8px 12px; background: #e8f4fd; border-radius: 6px; border-left: 4px solid #3498db; font-size: 14px; color: #333;">
+                            共找到 <span id="overviewTotalCount">0</span> 条记录
+                        </div>
+                        
+                        <!-- 数据表格 -->
+                        <div id="overviewDataResults" style="margin-top: 20px;">
+                            <div class="alert alert-info">请选择筛选条件并点击查找按钮</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 引入外部脚本 -->
+    <script src="../js/utils.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/main.js"></script>
+    <script src="../js/componentManager.js"></script>
+    <script src="../js/statistics.js"></script>
+    
+    <script>
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                console.log('统计分析页面加载完成，开始初始化...');
+                
+                // 初始化页面结构
+                await ComponentManager.initPageStructure({
+                    title: '统计分析',
+                    description: '查看各学校数据填报情况的总体概览',
+                    activeMenu: 'menu-statistics'
+                });
+                
+                // 初始化认证模块
+                await AuthManager.initialize();
+                console.log('认证模块初始化完成');
+
+                // 立即更新用户信息显示
+                const user = AuthManager.getCurrentUser();
+                if (user) {
+                    AuthManager.updateUserInfo(user);
+                    const userName = document.getElementById('userName');
+                    if (userName && userName.textContent === '加载中...') {
+                        userName.textContent = user.real_name || user.username || '未知用户';
+                    }
+                    
+                    // 根据用户角色显示/隐藏菜单项
+                    AuthManager.updateMenuVisibility(user);
+                    
+                    // 检查用户权限（统计分析页面仅基建中心和管理员可访问）
+                    if (user.role !== 'construction_center' && user.role !== 'admin') {
+                        alert('您没有权限访问此页面');
+                        window.location.href = 'data-entry.html';
+                        return;
+                    }
+                }
+
+                // 初始化统计分析模块
+                if (typeof StatisticsManager !== 'undefined' && StatisticsManager.initialize) {
+                    await StatisticsManager.initialize();
+                    console.log('统计分析模块初始化完成');
+                } else if (typeof statisticsManager !== 'undefined' && statisticsManager.initialize) {
+                    await statisticsManager.initialize();
+                    console.log('统计分析模块初始化完成');
+                } else {
+                    console.warn('统计管理器未找到或初始化方法不存在');
+                }
+
+                // 等待所有脚本加载完成后再检查函数
+                setTimeout(() => {
+                    if (typeof window.searchOverviewRecords === 'undefined') {
+                        console.error('searchOverviewRecords函数未正确加载');
+                        console.log('当前window对象上的统计相关函数:', 
+                            Object.keys(window).filter(key => key.includes('Overview') || key.includes('Statistics'))
+                        );
+                    } else {
+                        console.log('searchOverviewRecords函数加载成功');
+                    }
+                }, 1000);
+
+            } catch (error) {
+                console.error('页面初始化失败:', error);
+                if (error.message.includes('unauthorized') || error.message.includes('login')) {
+                    window.location.href = '../login.html';
+                }
+            }
+
+            // 检查数据库状态
+            if (typeof CommonAPI !== 'undefined') {
+                CommonAPI.checkDatabaseStatus().then(result => {
+                    if (!result.success) {
+                        console.warn('数据库连接状态检查失败:', result.error);
+                    }
+                }).catch(error => {
+                    console.warn('数据库状态检查出错:', error);
+                });
+            }
+        });
+
+        // 退出登录函数
+        function logout() {
+            if (typeof AuthManager !== 'undefined') {
+                AuthManager.logout();
+            }
+        }
+
+        // 页面跳转函数（覆盖main.js中的版本）
+        function showPage(pageId) {
+            console.log('统计页面中的showPage被调用:', pageId);
+            try {
+                switch(pageId) {
+                    case 'data-entry':
+                        window.location.href = '/index.html';
+                        break;
+                    case 'data-management':
+                        window.location.href = '/html/data-management.html';
+                        break;
+                    case 'statistics':
+                        // 已经在统计页面，不需要跳转
+                        break;
+                    case 'calculation-standards':
+                        window.location.href = '/html/calculation-standards.html';
+                        break;
+                    case 'user-management':
+                        window.location.href = '/html/user-management.html';
+                        break;
+                    default:
+                        console.warn('未知的页面ID:', pageId);
+                        window.location.href = '/index.html';
+                }
+            } catch (error) {
+                console.error('页面跳转失败:', error);
+                window.location.href = '/index.html';
+            }
+        }
+
+        // 全局暴露函数，覆盖main.js中的版本
+        window.showPage = showPage;
+
+        // 检查统计分析功能是否正确加载
+        window.addEventListener('load', function() {
+            if (typeof window.searchOverviewRecords === 'undefined') {
+                console.error('统计分析功能未正确加载：searchOverviewRecords函数未找到');
+            } else {
+                console.log('统计分析功能加载完成');
+            }
+        });
+
+        // 处理搜索按钮点击
+        async function handleSearchClick() {
+            try {
+                console.log('搜索按钮被点击');
+                
+                // 检查函数是否存在
+                if (typeof window.searchOverviewRecords === 'function') {
+                    console.log('调用 window.searchOverviewRecords');
+                    await window.searchOverviewRecords();
+                } else {
+                    console.error('searchOverviewRecords函数不存在');
+                    console.log('当前可用的统计函数:', 
+                        Object.keys(window).filter(key => 
+                            key.toLowerCase().includes('search') || 
+                            key.toLowerCase().includes('overview') ||
+                            key.toLowerCase().includes('statistics')
+                        )
+                    );
+                    
+                    // 尝试重新加载statistics.js
+                    console.log('尝试重新初始化统计功能...');
+                    if (typeof StatisticsManager !== 'undefined' && StatisticsManager.initialize) {
+                        await StatisticsManager.initialize();
+                        // 再次尝试调用
+                        if (typeof window.searchOverviewRecords === 'function') {
+                            await window.searchOverviewRecords();
+                        } else {
+                            alert('统计分析功能加载失败，请刷新页面重试');
+                        }
+                    } else {
+                        alert('统计分析功能加载失败，请刷新页面重试');
+                    }
+                }
+            } catch (error) {
+                console.error('搜索过程中出错:', error);
+                alert('搜索失败: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

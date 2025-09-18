@@ -1,0 +1,27 @@
+<!-- 左侧菜单组件 -->
+<nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h1>高校建筑面积缺口计算器</h1>
+    </div>
+    
+    <div class="sidebar-menu">
+        <a class="menu-item" onclick="showPage('data-entry')" id="menu-data-entry">
+            高校测算
+        </a>
+        <a class="menu-item" onclick="showPage('data-management')" id="menu-data-management">
+            历史测算
+        </a>
+        <!-- 测算数据统计菜单项（仅基建中心和管理员可见） -->
+        <a class="menu-item menu-restricted" onclick="showPage('statistics')" id="menu-statistics">
+            测算统计
+        </a>
+        <!-- 测算标准管理菜单项（仅管理员可见） -->
+        <a class="menu-item menu-restricted" href="/html/calculation-standards.html" id="menu-calculation-standards">
+            标准管理
+        </a>
+        <!-- 用户管理菜单项（仅管理员可见） -->
+        <a class="menu-item menu-restricted" href="/html/user-management.html" id="menu-user-management">
+            用户管理
+        </a>
+    </div>
+</nav>

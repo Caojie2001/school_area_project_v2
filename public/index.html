@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高校建筑面积缺口计算器</title>
+    <!-- 引入模块化CSS样式 -->
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <!-- 移动端菜单按钮 -->
+    <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+    
+    <div class="app-container">
+        <!-- 左侧菜单 -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h1>高校建筑面积缺口计算器</h1>
+            </div>
+            
+            <div class="sidebar-menu">
+                <a class="menu-item active" onclick="showPage('data-entry')" id="menu-data-entry">
+                    高校测算
+                </a>
+                <a class="menu-item" onclick="showPage('data-management')" id="menu-data-management">
+                    历史测算
+                </a>
+                <!-- 测算数据统计菜单项（仅基建中心和管理员可见） -->
+                <a class="menu-item menu-restricted" onclick="showPage('statistics')" id="menu-statistics">
+                    测算统计
+                </a>
+                <!-- 测算标准管理菜单项（仅管理员可见） -->
+                <a class="menu-item menu-restricted" href="/html/calculation-standards.html" id="menu-calculation-standards">
+                    标准管理
+                </a>
+                <!-- 用户管理菜单项（仅管理员可见） -->
+                <a class="menu-item menu-restricted" href="/html/user-management.html" id="menu-user-management">
+                    用户管理
+                </a>
+            </div>
+        </nav>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <!-- 数据填报页面 -->
+            <div id="page-data-entry" class="page-content active">
+                <div class="content-header">
+                    <div class="content-header-left">
+                        <h2>高校测算</h2>
+                        <p>根依据规划学生总数测算规划建筑面积，与现状面积（含拟建成部分）对比，得出建筑面积缺口。</p>
+                    </div>
+                    <div class="content-header-right">
+                        <div class="user-info" id="userInfo">
+                            <div class="user-avatar" id="userAvatar">A</div>
+                            <div class="user-details">
+                                <div class="user-name" id="userName">加载中...</div>
+                                <div class="user-role" id="userRole">用户</div>
+                            </div>
+                        </div>
+                        <button class="logout-btn" onclick="logout()">退出登录</button>
+                    </div>
+                </div>
+                <div class="content-body">
+                    <!-- 在线数据填写表单 -->
+                    <div class="online-form-section" id="onlineFormSection">
+                        <div class="form-container">
+                        <form id="onlineDataForm" class="data-form" onsubmit="handleOnlineFormSubmit(event)">
+                            <div class="form-row">
+                                <div class="form-group form-group-school-name">
+                                    <label for="schoolName">高校名称 *</label>
+                                    <select id="schoolName" name="schoolName" required class="form-control" style="background: white;" onchange="updateSchoolType()">
+                                        <option value="">请选择高校</option>
+                                        <option value="上海大学">上海大学</option>
+                                        <option value="上海交通大学医学院">上海交通大学医学院</option>
+                                        <option value="上海理工大学">上海理工大学</option>
+                                        <option value="上海师范大学">上海师范大学</option>
+                                        <option value="上海科技大学">上海科技大学</option>
+                                        <option value="华东政法大学">华东政法大学</option>
+                                        <option value="上海海事大学">上海海事大学</option>
+                                        <option value="上海海洋大学">上海海洋大学</option>
+                                        <option value="上海中医药大学">上海中医药大学</option>
+                                        <option value="上海体育大学">上海体育大学</option>
+                                        <option value="上海音乐学院">上海音乐学院</option>
+                                        <option value="上海戏剧学院">上海戏剧学院</option>
+                                        <option value="上海电力大学">上海电力大学</option>
+                                        <option value="上海对外经贸大学">上海对外经贸大学</option>
+                                        <option value="上海应用技术大学">上海应用技术大学</option>
+                                        <option value="上海立信会计金融学院">上海立信会计金融学院</option>
+                                        <option value="上海工程技术大学">上海工程技术大学</option>
+                                        <option value="上海第二工业大学">上海第二工业大学</option>
+                                        <option value="上海商学院">上海商学院</option>
+                                        <option value="上海电机学院">上海电机学院</option>
+                                        <option value="上海政法学院">上海政法学院</option>
+                                        <option value="上海健康医学院">上海健康医学院</option>
+                                        <option value="上海出版印刷高等专科学校">上海出版印刷高等专科学校</option>
+                                        <option value="上海旅游高等专科学校">上海旅游高等专科学校</option>
+                                        <option value="上海城建职业学院">上海城建职业学院</option>
+                                        <option value="上海电子信息职业技术学院">上海电子信息职业技术学院</option>
+                                        <option value="上海工艺美术职业学院">上海工艺美术职业学院</option>
+                                        <option value="上海农林职业技术学院">上海农林职业技术学院</option>
+                                        <option value="上海健康医学院附属卫生学校(上海健康护理职业学院(筹))">上海健康医学院附属卫生学校(上海健康护理职业学院(筹))</option>
+                                    </select>
+                                    <small class="school-type-display" id="schoolTypeDisplay"></small>
+                                </div>
+                                <div class="form-group form-group-year">
+                                    <label for="year">测算年份 *</label>
+                                    <div class="year-selector-container">
+                                        <input type="text" id="year" name="year" value="2025" readonly required class="form-control year-input" onclick="showYearGrid()">
+                                        <div class="year-grid-overlay" id="yearGridOverlay" style="display: none;">
+                                            <div class="year-grid-container">
+                                                <div class="year-grid-header">
+                                                    <button type="button" class="year-nav-btn" id="yearPrevBtn" onclick="moveYearGrid(-1)">‹</button>
+                                                    <span class="year-range-text" id="yearRangeText"></span>
+                                                    <button type="button" class="year-nav-btn" id="yearNextBtn" onclick="moveYearGrid(1)">›</button>
+                                                </div>
+                                                <div class="year-grid" id="yearGrid">
+                                                    <!-- 年份九宫格将在这里动态生成 -->
+                                                </div>
+                                                <div class="year-grid-footer">
+                                                    <button type="button" class="year-close-btn" onclick="hideYearGrid()">关闭</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card">
+                                <h3>学生人数信息</h3>
+                                <p>请填写测算年份的规划学生数</p>
+                                <div class="student-category">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>全日制学生总数(人)</label>
+                                            <input type="text" id="fullTimeTotal" readonly class="form-control calculated-field" style="background: #f5f5f5; border: 1px solid #ddd;">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="fullTimeSpecialist">专科全日制学生数(人)</label>
+                                            <input type="number" id="fullTimeSpecialist" name="fullTimeSpecialist" min="0" value="0" class="form-control" oninput="calculateTotalStudents()" style="background: white; border: 1px solid #ddd;">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="fullTimeUndergraduate">本科全日制学生数(人)</label>
+                                            <input type="number" id="fullTimeUndergraduate" name="fullTimeUndergraduate" min="0" value="0" class="form-control" oninput="calculateTotalStudents()" style="background: white; border: 1px solid #ddd;">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="fullTimeMaster">硕士全日制学生数(人)</label>
+                                            <input type="number" id="fullTimeMaster" name="fullTimeMaster" min="0" value="0" class="form-control" oninput="calculateTotalStudents()" style="background: white; border: 1px solid #ddd;">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="fullTimeDoctor">博士全日制学生数(人)</label>
+                                            <input type="number" id="fullTimeDoctor" name="fullTimeDoctor" min="0" value="0" class="form-control" oninput="calculateTotalStudents()" style="background: white; border: 1px solid #ddd; font-weight: normal; text-align: left;">
+                                        </div>
+                                    </div>
+                                    <div class="form-row international-row">
+                                        <div class="form-group">
+                                            <label>留学生总数(人)</label>
+                                            <input type="text" id="internationalTotal" readonly class="form-control calculated-field" style="background: #f5f5f5; border: 1px solid #ddd;">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="internationalUndergraduate">本科留学生数(人)</label>
+                                            <input type="number" id="internationalUndergraduate" name="internationalUndergraduate" min="0" value="0" class="form-control" oninput="calculateTotalStudents()" style="background: white; border: 1px solid #ddd;">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="internationalMaster">硕士留学生数(人)</label>
+                                            <input type="number" id="internationalMaster" name="internationalMaster" min="0" value="0" class="form-control" oninput="calculateTotalStudents()" style="background: white; border: 1px solid #ddd;">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="internationalDoctor">博士留学生数(人)</label>
+                                            <input type="number" id="internationalDoctor" name="internationalDoctor" min="0" value="0" class="form-control" oninput="calculateTotalStudents()" style="background: white; border: 1px solid #ddd; font-weight: normal; text-align: left;">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>学生总人数(人)</label>
+                                        <input type="text" id="totalStudents" readonly class="form-control calculated-field" style="background: #f5f5f5; border: 1px solid #ddd; font-weight: bold;">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card">
+                                <h3>建筑面积信息</h3>
+                                <p>请填写现状面积及到测算年份为止拟建成的面积</p>
+                                <div class="form-row">
+                                    <div class="form-group" style="flex: 1; margin-right: 15px;">
+                                        <label for="teachingArea">教学及辅助用房面积(m²)</label>
+                                        <input type="number" id="teachingArea" name="teachingArea" min="0" step="0.01" value="0" class="form-control" oninput="calculateTotalBuildingArea()" style="background: white; border: 1px solid #ddd;">
+                                        <small style="color: #6c757d; font-size: 12px;">包括教室、实验室、图书馆等</small>
+                                    </div>
+                                    <div class="form-group" style="flex: 1; margin-right: 15px;">
+                                        <label for="officeArea">办公用房面积(m²)</label>
+                                        <input type="number" id="officeArea" name="officeArea" min="0" step="0.01" value="0" class="form-control" oninput="calculateTotalBuildingArea()" style="background: white; border: 1px solid #ddd;">
+                                        <small style="color: #6c757d; font-size: 12px;">行政办公、教师办公等</small>
+                                    </div>
+                                    <div class="form-group" style="flex: 1;">
+                                        <label for="logisticsArea">后勤辅助用房面积(m²)</label>
+                                        <input type="number" id="logisticsArea" name="logisticsArea" min="0" step="0.01" value="0" class="form-control" oninput="calculateTotalBuildingArea()" style="background: white; border: 1px solid #ddd;">
+                                        <small style="color: #6c757d; font-size: 12px;">设备用房、仓库等</small>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group" style="flex: 1; margin-right: 15px;">
+                                        <label for="totalLivingArea">生活用房总面积(m²)</label>
+                                        <input type="number" id="totalLivingArea" name="totalLivingArea" min="0" step="0.01" value="0" class="form-control" oninput="calculateOtherLivingArea(); calculateTotalBuildingArea();" style="background: white; border: 1px solid #ddd;">
+                                        <small style="color: #6c757d; font-size: 12px;">所有生活用房的总面积</small>
+                                    </div>
+                                    <div class="form-group" style="flex: 1; margin-right: 15px;">
+                                        <label for="dormitoryArea">其中:学生宿舍面积(m²)</label>
+                                        <input type="number" id="dormitoryArea" name="dormitoryArea" min="0" step="0.01" value="0" class="form-control" oninput="calculateOtherLivingArea(); calculateTotalBuildingArea();" style="background: white; border: 1px solid #ddd;">
+                                        <small style="color: #6c757d; font-size: 12px;">学生住宿用房面积</small>
+                                    </div>
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>其中:其他生活用房面积(m²)</label>
+                                        <input type="text" id="otherLivingArea" readonly class="form-control calculated-field" style="background: #f5f5f5; border: 1px solid #ddd;">
+                                        <small style="color: #6c757d; font-size: 12px;">自动计算：生活用房总面积 - 学生宿舍面积</small>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>建筑总面积(m²)</label>
+                                        <input type="text" id="totalBuildingArea" readonly class="form-control calculated-field" style="background: #f5f5f5; border: 1px solid #ddd; font-weight: bold;">
+                                        <small style="color: #6c757d; font-size: 12px;">自动计算：教学及辅助用房面积+办公用房面积+生活用房总面积+后勤辅助用房面积</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card">
+                                <h3>特殊用房补助信息</h3>
+                                <p>请填写：</p>
+                                <p>1, 经国家发改委、教育部、科技部等部委批准并挂牌的国家级重点实验室、工程研究中心、工程技术中心；</p>
+                                <p>2, 纳入国家“双一流”建设、高水平地方高校重点建设名单的学科建设所需用房;</p>
+                                <p>3, 经国家或市编制管理部门批准设立的专职科研机构所需用房。</p>
+                                <div id="specialSubsidies">
+                                    <!-- 特殊补助项将在这里动态添加 -->
+                                </div>
+                                <button type="button" class="btn btn-outline" onclick="addSubsidy()" style="background: transparent; color: #3498db; border: 2px solid #3498db; padding: 12px 20px; border-radius: 6px; cursor: pointer;">添加特殊补助</button>
+                            </div>
+                            
+                            <div class="card">
+                                <div class="form-group">
+                                    <label for="remarks">备注</label>
+                                    <textarea id="remarks" name="remarks" rows="3" placeholder="可补充填写学生人数、建筑面积来源年份" class="form-control" style="background: white; border: 1px solid #ddd;"></textarea>
+                                </div>
+                            </div>
+                            
+                            <div class="form-actions" style="text-align: center; margin-top: 30px;">
+                                <button type="button" class="btn btn-outline" onclick="resetForm()" style="background: white; color: #e74c3c; border: 2px solid #e74c3c; padding: 12px 30px; border-radius: 6px; cursor: pointer; margin-right: 15px;">清空表单</button>
+                                <button type="submit" id="calculateButton" class="btn btn-primary" style="background: linear-gradient(135deg, #3498db, #2980b9); color: white; border: none; padding: 12px 30px; border-radius: 6px; cursor: pointer; font-weight: 600;">计算分析</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 计算进度显示 -->
+                <div class="progress-section" id="progressSection" style="display: none;">
+                    <div class="card">
+                        <h3>计算进度</h3>
+                        <div class="progress-bar" style="width: 100%; height: 20px; background: #f1f3f4; border-radius: 10px; overflow: hidden; margin: 15px 0;">
+                            <div class="progress-fill" id="progressFill" style="height: 100%; background: linear-gradient(90deg, #3498db, #2ecc71); border-radius: 10px; width: 0%; transition: width 0.3s ease;"></div>
+                        </div>
+                        <p id="progressText" style="text-align: center; color: #6c757d;">准备计算...</p>
+                    </div>
+                </div>
+
+                <!-- 分析结果详情 -->
+                <div class="analysis-results-section" id="analysisResultsSection" style="display: none;">
+                    <div class="card">
+                        <div class="analysis-results-content" id="analysisResultsContent"></div>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <!-- 数据管理页面 -->
+            <div id="page-data-management" class="page-content">
+                <div class="content-header">
+                    <div class="content-header-left">
+                        <h2>历史测算</h2>
+                        <p>查看、编辑和管理已提交的测算数据记录。</p>
+                    </div>
+                    <div class="content-header-right">
+                        <div class="user-info" id="userInfo2">
+                            <div class="user-avatar" id="userAvatar2">A</div>
+                            <div class="user-details">
+                                <div class="user-name" id="userName2">加载中...</div>
+                                <div class="user-role" id="userRole2">用户</div>
+                            </div>
+                        </div>
+                        <button class="logout-btn" onclick="logout()">退出登录</button>
+                    </div>
+                </div>
+                <div class="content-body">
+                    <!-- 学校历史查询 -->
+                    <div class="card">
+                        <div class="search-bar">
+                            <select id="dataYearFilter" class="search-input" style="width: 12%; min-width: 100px;">
+                                <option value="all">所有测算年份</option>
+                            </select>
+                            <select id="dataSchoolNameFilter" class="search-input" style="width: 28%; min-width: 150px;">
+                                <option value="all">所有高校</option>
+                                <option value="上海大学">上海大学</option>
+                                <option value="上海交通大学医学院">上海交通大学医学院</option>
+                                <option value="上海理工大学">上海理工大学</option>
+                                <option value="上海师范大学">上海师范大学</option>
+                                <option value="上海科技大学">上海科技大学</option>
+                                <option value="华东政法大学">华东政法大学</option>
+                                <option value="上海海事大学">上海海事大学</option>
+                                <option value="上海海洋大学">上海海洋大学</option>
+                                <option value="上海中医药大学">上海中医药大学</option>
+                                <option value="上海体育大学">上海体育大学</option>
+                                <option value="上海音乐学院">上海音乐学院</option>
+                                <option value="上海戏剧学院">上海戏剧学院</option>
+                                <option value="上海电力大学">上海电力大学</option>
+                                <option value="上海对外经贸大学">上海对外经贸大学</option>
+                                <option value="上海应用技术大学">上海应用技术大学</option>
+                                <option value="上海立信会计金融学院">上海立信会计金融学院</option>
+                                <option value="上海工程技术大学">上海工程技术大学</option>
+                                <option value="上海第二工业大学">上海第二工业大学</option>
+                                <option value="上海商学院">上海商学院</option>
+                                <option value="上海电机学院">上海电机学院</option>
+                                <option value="上海政法学院">上海政法学院</option>
+                                <option value="上海健康医学院">上海健康医学院</option>
+                                <option value="上海出版印刷高等专科学校">上海出版印刷高等专科学校</option>
+                                <option value="上海旅游高等专科学校">上海旅游高等专科学校</option>
+                                <option value="上海城建职业学院">上海城建职业学院</option>
+                                <option value="上海电子信息职业技术学院">上海电子信息职业技术学院</option>
+                                <option value="上海工艺美术职业学院">上海工艺美术职业学院</option>
+                                <option value="上海农林职业技术学院">上海农林职业技术学院</option>
+                                <option value="上海健康医学院附属卫生学校(上海健康护理职业学院(筹))">上海健康医学院附属卫生学校(上海健康护理职业学院(筹))</option>
+                            </select>
+                            <select id="dataUserFilter" class="search-input" style="width: 15%; min-width: 100px;">
+                                <option value="all">所有测算用户</option>
+                            </select>
+
+                            <button class="btn btn-primary" onclick="searchDataRecords()" style="width: 10%; min-width: 70px; margin-left: 8px;">查找</button>
+                            <button class="btn btn-secondary" onclick="batchDownloadSearchResults()" id="batchDownloadBtn" style="width: 13%; min-width: 90px; margin-left: 8px;" disabled>批量下载</button>
+                        </div>
+                        
+                        <div id="dataHistoryResults">
+                            <div class="alert alert-info">请选择筛选条件并点击查找按钮</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 统计分析页面 -->
+            <div id="page-statistics" class="page-content">
+                <div class="content-header">
+                    <div class="content-header-left">
+                        <h2>测算统计</h2>
+                        <p>查看各学校数据填报情况的总体概览。</p>
+                    </div>
+                    <div class="content-header-right">
+                        <div class="user-info" id="userInfo3">
+                            <div class="user-avatar" id="userAvatar3">A</div>
+                            <div class="user-details">
+                                <div class="user-name" id="userName3">加载中...</div>
+                                <div class="user-role" id="userRole3">用户</div>
+                            </div>
+                        </div>
+                        <button class="logout-btn" onclick="logout()">退出登录</button>
+                    </div>
+                </div>
+                <div class="content-body">
+                    <!-- 数据统计卡片 -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h4>现状建筑总面积</h4>
+                            <div class="stat-value" id="overviewCurrentArea">0.00</div>
+                            <div class="stat-unit">(m²)</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>测算建筑总面积</h4>
+                            <div class="stat-value" id="overviewRequiredArea">0.00</div>
+                            <div class="stat-unit">(m²)</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>测算建筑面积总缺额(不含特殊补助)</h4>
+                            <div class="stat-value" id="overviewGapWithoutSubsidy">0.00</div>
+                            <div class="stat-unit">(m²)</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>测算建筑面积总缺额(含补助)</h4>
+                            <div class="stat-value" id="overviewGapWithSubsidy">0.00</div>
+                            <div class="stat-unit">(m²)</div>
+                        </div>
+                    </div>
+
+                    <!-- 筛选区域 -->
+                    <div class="card">
+                        <div class="search-bar">
+                            <select id="overviewYearFilter" class="search-input" style="width: 20%; min-width: 120px;">
+                                <!-- 年份选项将通过JavaScript动态加载 -->
+                            </select>
+                            <select id="overviewUserTypeFilter" class="search-input" style="width: 25%; min-width: 150px;">
+                                <option value="school">所有高校用户</option>
+                                <option value="construction_center" selected>基建中心</option>
+                            </select>
+                            <button class="btn btn-primary" onclick="searchOverviewRecords()" style="width: 10%; min-width: 70px; margin-left: 8px;">查找</button>
+                        </div>
+                        
+                        <!-- 记录总数显示 -->
+                        <div id="overviewRecordCount" class="record-count" style="display: none; margin-top: 15px; padding: 8px 12px; background: #e8f4fd; border-radius: 6px; border-left: 4px solid #3498db; font-size: 14px; color: #333;">
+                            共找到 <span id="overviewTotalCount">0</span> 条记录
+                        </div>
+                        
+                        <!-- 数据表格 -->
+                        <div id="overviewDataResults" style="margin-top: 20px;">
+                            <div class="alert alert-info">请选择筛选条件并点击查找按钮</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 用户管理页面 -->
+            <div id="page-user-management" class="page-content">
+                <div class="content-header">
+                    <div class="content-header-left">
+                        <h2>用户管理</h2>
+                        <p>管理系统用户账户和权限</p>
+                    </div>
+                    <div class="content-header-right">
+                        <div class="user-info" id="userInfo4">
+                            <div class="user-avatar" id="userAvatar4">A</div>
+                            <div class="user-details">
+                                <div class="user-name" id="userName4">加载中...</div>
+                                <div class="user-role" id="userRole4">用户</div>
+                            </div>
+                        </div>
+                        <button class="logout-btn" onclick="logout()">退出登录</button>
+                    </div>
+                </div>
+                <div class="content-body">
+                    <!-- 操作按钮 -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-primary" onclick="showCreateUserModal()">
+                                <span>+</span>
+                                新增用户
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 用户管理卡片 -->
+                    <div class="card">
+                        <div id="userManagementAlert" style="display: none; margin-bottom: 20px;"></div>
+                        
+                        <div class="loading" id="userManagementLoading" style="text-align: center; padding: 40px; color: #6c757d;">
+                            <p>正在加载用户数据...</p>
+                        </div>
+                        
+                        <div id="userTableContainer" style="display: none;">
+                            <div style="overflow-x: auto;">
+                                <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px;">
+                                    <thead>
+                                        <tr style="background: #f8f9fa;">
+                                            <th style="padding: 12px 15px; text-align: left; border-bottom: 1px solid #e9ecef; font-weight: 600; color: #2c3e50; font-size: 12px;">UID</th>
+                                            <th style="padding: 12px 15px; text-align: left; border-bottom: 1px solid #e9ecef; font-weight: 600; color: #2c3e50; font-size: 12px;">真实姓名</th>
+                                            <th style="padding: 12px 15px; text-align: left; border-bottom: 1px solid #e9ecef; font-weight: 600; color: #2c3e50; font-size: 12px;">邮箱</th>
+                                            <th style="padding: 12px 15px; text-align: left; border-bottom: 1px solid #e9ecef; font-weight: 600; color: #2c3e50; font-size: 12px;">角色</th>
+                                            <th style="padding: 12px 15px; text-align: left; border-bottom: 1px solid #e9ecef; font-weight: 600; color: #2c3e50; font-size: 12px;">学校名称</th>
+                                            <th style="padding: 12px 15px; text-align: left; border-bottom: 1px solid #e9ecef; font-weight: 600; color: #2c3e50; font-size: 12px;">状态</th>
+                                            <th style="padding: 12px 15px; text-align: left; border-bottom: 1px solid #e9ecef; font-weight: 600; color: #2c3e50; font-size: 12px;">创建时间</th>
+                                            <th style="padding: 12px 15px; text-align: left; border-bottom: 1px solid #e9ecef; font-weight: 600; color: #2c3e50; font-size: 12px;">最后登录</th>
+                                            <th style="padding: 12px 15px; text-align: left; border-bottom: 1px solid #e9ecef; font-weight: 600; color: #2c3e50; font-size: 12px;">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="userTableBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div id="userEmptyState" style="display: none; text-align: center; padding: 60px 30px; color: #6c757d;">
+                            <h3 style="margin-bottom: 10px; color: #2c3e50; font-size: 16px;">暂无用户数据</h3>
+                            <p style="font-size: 12px;">系统中还没有任何用户，点击上方按钮创建第一个用户。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 统计分析页面已被完全移除 -->
+        </main>
+
+        <!-- 用户管理模态框 -->
+        <div id="createUserModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+            <div style="background: white; border-radius: 12px; max-width: 500px; margin: 10% auto; padding: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+                <div style="padding: 20px 30px; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0; color: #2c3e50; font-size: 18px;">新增用户</h3>
+                    <span style="font-size: 20px; font-weight: bold; color: #999; cursor: pointer;" onclick="hideCreateUserModal()">&times;</span>
+                </div>
+                <div style="padding: 30px;">
+                    <form id="createUserForm">
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; color: #2c3e50; font-weight: 500; font-size: 12px;">UID *</label>
+                            <input type="text" id="createUsername" name="username" style="width: 100%; padding: 12px 15px; border: 1px solid #e9ecef; border-radius: 6px; font-size: 12px;" required>
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; color: #2c3e50; font-weight: 500; font-size: 12px;">密码 *</label>
+                            <input type="password" id="createPassword" name="password" style="width: 100%; padding: 12px 15px; border: 1px solid #e9ecef; border-radius: 6px; font-size: 12px;" required>
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; color: #2c3e50; font-weight: 500; font-size: 12px;">真实姓名</label>
+                            <input type="text" id="createRealName" name="real_name" style="width: 100%; padding: 12px 15px; border: 1px solid #e9ecef; border-radius: 6px; font-size: 12px;">
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; color: #2c3e50; font-weight: 500; font-size: 12px;">邮箱</label>
+                            <input type="email" id="createEmail" name="email" style="width: 100%; padding: 12px 15px; border: 1px solid #e9ecef; border-radius: 6px; font-size: 12px;">
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; color: #2c3e50; font-weight: 500; font-size: 12px;">角色 *</label>
+                            <select id="createRole" name="role" style="width: 100%; padding: 12px 15px; border: 1px solid #e9ecef; border-radius: 6px; font-size: 12px;" required onchange="toggleSchoolNameField()">
+                                <option value="">请选择角色</option>
+                                <option value="admin">管理员</option>
+                                <option value="construction_center">基建中心</option>
+                                <option value="school">学校用户</option>
+                            </select>
+                        </div>
+                        <div id="schoolNameGroup" style="margin-bottom: 20px; display: none;">
+                            <label style="display: block; margin-bottom: 8px; color: #2c3e50; font-weight: 500; font-size: 12px;">学校名称 *</label>
+                            <select id="createSchoolName" name="school_name" style="width: 100%; padding: 12px 15px; border: 1px solid #e9ecef; border-radius: 6px; font-size: 12px;">
+                                <option value="">请选择学校</option>
+                                <option value="上海大学">上海大学</option>
+                                <option value="上海交通大学医学院">上海交通大学医学院</option>
+                                <option value="上海理工大学">上海理工大学</option>
+                                <option value="上海师范大学">上海师范大学</option>
+                                <option value="上海科技大学">上海科技大学</option>
+                                <option value="华东政法大学">华东政法大学</option>
+                                <option value="上海海事大学">上海海事大学</option>
+                                <option value="上海海洋大学">上海海洋大学</option>
+                                <option value="上海中医药大学">上海中医药大学</option>
+                                <option value="上海体育大学">上海体育大学</option>
+                                <option value="上海音乐学院">上海音乐学院</option>
+                                <option value="上海戏剧学院">上海戏剧学院</option>
+                                <option value="上海电力大学">上海电力大学</option>
+                                <option value="上海对外经贸大学">上海对外经贸大学</option>
+                                <option value="上海应用技术大学">上海应用技术大学</option>
+                                <option value="上海立信会计金融学院">上海立信会计金融学院</option>
+                                <option value="上海工程技术大学">上海工程技术大学</option>
+                                <option value="上海第二工业大学">上海第二工业大学</option>
+                                <option value="上海商学院">上海商学院</option>
+                                <option value="上海电机学院">上海电机学院</option>
+                                <option value="上海政法学院">上海政法学院</option>
+                                <option value="上海健康医学院">上海健康医学院</option>
+                                <option value="上海出版印刷高等专科学校">上海出版印刷高等专科学校</option>
+                                <option value="上海旅游高等专科学校">上海旅游高等专科学校</option>
+                                <option value="上海城建职业学院">上海城建职业学院</option>
+                                <option value="上海电子信息职业技术学院">上海电子信息职业技术学院</option>
+                                <option value="上海工艺美术职业学院">上海工艺美术职业学院</option>
+                                <option value="上海农林职业技术学院">上海农林职业技术学院</option>
+                                <option value="上海健康医学院附属卫生学校(上海健康护理职业学院(筹))">上海健康医学院附属卫生学校(上海健康护理职业学院(筹))</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div style="padding: 20px 30px; border-top: 1px solid #e9ecef; text-align: right;">
+                    <button type="button" style="padding: 10px 20px; border-radius: 6px; border: 1px solid #6c757d; background: #6c757d; color: white; cursor: pointer; margin-right: 10px; font-size: 12px;" onclick="hideCreateUserModal()">取消</button>
+                    <button type="button" style="padding: 10px 20px; border-radius: 6px; border: none; background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; cursor: pointer; font-size: 12px;" onclick="createUser()">创建用户</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入外部脚本 -->
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/dataEntry.js"></script>
+    <script src="js/dataManagement.js"></script>
+    <script src="js/statistics.js"></script>
+    <script src="js/userManagement.js"></script>
+    <script src="js/progressManager.js"></script>
+    
+    <script>
+        // 页面加载时初始化主应用和认证模块
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                console.log('页面加载完成，开始初始化应用...');
+                await AppManager.initialize();
+                console.log('主应用管理器初始化完成');
+                
+                // 验证自动刷新管理器是否加载
+                if (typeof AutoRefreshManager !== 'undefined') {
+                    console.log('✅ 自动刷新管理器已加载，功能状态:', AutoRefreshManager.config.enabledForOperations);
+                } else {
+                    console.warn('❌ 自动刷新管理器未加载');
+                }
+                
+                await AuthManager.initialize();
+                console.log('认证模块初始化完成');
+
+                // 立即更新用户信息显示和菜单
+                const user = AuthManager.getCurrentUser();
+                if (user) {
+                    AuthManager.updateUserInfo(user);
+                    const userName1 = document.getElementById('userName');
+                    if (userName1 && userName1.textContent === '加载中...') {
+                        userName1.textContent = user.real_name || user.username || '未知用户';
+                    }
+                }
+            } catch (error) {
+                console.error('认证模块初始化失败:', error);
+                if (error.message.includes('unauthorized') || error.message.includes('login')) {
+                    window.location.href = '/login.html';
+                }
+            }
+
+            // 检查数据库状态
+            CommonAPI.checkDatabaseStatus().then(result => {
+                if (!result.success) {
+                    console.warn('数据库连接状态检查失败:', result.error);
+                }
+            }).catch(error => {
+                console.warn('数据库状态检查出错:', error);
+            });
+
+            // 移动端点击外部关闭菜单
+            document.addEventListener('click', function(e) {
+                if (window.innerWidth <= 768) {
+                    const sidebar = document.getElementById('sidebar');
+                    const menuBtn = document.querySelector('.mobile-menu-btn');
+                    if (sidebar && menuBtn && !sidebar.contains(e.target) && !menuBtn.contains(e.target)) {
+                        closeSidebar();
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

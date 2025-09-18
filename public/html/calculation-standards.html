@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>标准管理 - 高校建筑面积缺口计算器</title>
+    <!-- 引入模块化CSS样式 -->
+    <link rel="stylesheet" href="../css/main.css">
+    <style>
+        /* 测算标准管理专用样式 */
+        .standards-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .tab-container {
+            margin-top: 20px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            border-bottom: 2px solid #e9ecef;
+            margin-bottom: 30px;
+            gap: 2px;
+        }
+
+        .tab-button {
+            padding: 12px 24px;
+            border: none;
+            background: #f8f9fa;
+            color: #6c757d;
+            cursor: pointer;
+            border-radius: 8px 8px 0 0;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .tab-button:hover {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .tab-button.active {
+            background: white;
+            color: #3498db;
+            border-bottom: 2px solid #3498db;
+            transform: translateY(2px);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .form-hint {
+            color: #6c757d;
+            font-size: 12px;
+            margin-top: 5px;
+            display: block;
+        }
+
+        .standards-table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            margin-bottom: 20px;
+        }
+
+        .comprehensive-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .comprehensive-table th {
+            background: #f8f9fa;
+            color: #495057;
+            font-weight: 600;
+            padding: 12px 8px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+            white-space: nowrap;
+        }
+
+        .comprehensive-table td {
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .comprehensive-table .school-type {
+            font-weight: 600;
+            background: #f8f9fa;
+            color: #495057;
+            text-align: left;
+            padding-left: 12px;
+        }
+
+        .comprehensive-table .room-type {
+            text-align: left;
+            padding-left: 16px;
+            color: #6c757d;
+        }
+
+        .comprehensive-table .room-type.sub-type {
+            padding-left: 24px;
+            font-style: italic;
+            color: #868e96;
+        }
+
+        .comprehensive-table .calculated-row {
+            background: #f1f3f4;
+            font-weight: 500;
+        }
+
+        .comprehensive-table input {
+            width: 80px;
+            padding: 4px 6px;
+            border: 1px solid #ced4da;
+            border-radius: 3px;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .comprehensive-table input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+        }
+
+        .standards-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        .standards-table th,
+        .standards-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .standards-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .standards-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .table-input {
+            width: 80px;
+            padding: 6px 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .table-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+        }
+
+        .table-actions {
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid #e9ecef;
+            background: #f8f9fa;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            margin: 0 2px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-small.btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-small.btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .btn-small.btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-small.btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-small.btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-small.btn-info:hover {
+            background: #138496;
+        }
+
+        .btn-small.btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-small.btn-warning:hover {
+            background: #e0a800;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            padding: 30px 20px 20px;
+            border-top: 1px solid #e9ecef;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .card-actions .btn {
+            min-width: 140px;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid transparent;
+        }
+
+        .alert-success {
+            color: #155724;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+
+        .alert-error {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+
+        .alert-warning {
+            color: #856404;
+            background-color: #fff3cd;
+            border-color: #ffeaa7;
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            .tab-buttons {
+                flex-wrap: wrap;
+            }
+            
+            .tab-button {
+                flex: 1;
+                min-width: 120px;
+                font-size: 12px;
+                padding: 10px 16px;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .card-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .card-actions .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+            
+            .standards-table th,
+            .standards-table td {
+                padding: 8px 10px;
+                font-size: 13px;
+            }
+        }
+
+        /* 已修改输入框样式 */
+        input.modified {
+            background-color: #fff3cd !important;
+            border-color: #ffc107 !important;
+            box-shadow: 0 0 0 0.1rem rgba(255, 193, 7, 0.25) !important;
+        }
+
+        /* 保存按钮样式增强 */
+        .btn-warning {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边栏容器 -->
+        <div id="sidebarContainer"></div>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <div class="page-content active">
+                <!-- 页面头部容器 -->
+                <div id="pageHeaderContainer"></div>
+                
+                <!-- 页面内容容器 -->
+                <div class="content-body" id="pageContentContainer">
+                    <div class="standards-container">
+                        
+                        <!-- 消息提示区域 -->
+                        <div id="messageArea"></div>
+                        
+                        <!-- 测算标准配置 -->
+                        <div class="card">
+                            <div class="card-content">
+                                <!-- 标准参数设置 -->
+                                <div class="tab-container">
+                                    <!-- 基础面积标准选项卡 -->
+                                    <div class="tab-content active" id="basic-standards">
+                                        <div class="form-section">
+                                            <div class="standards-table-container">
+                                                <div class="scrollable-table-wrapper">
+                                                    <!-- 冻结的左上角表头 -->
+                                                    <div class="frozen-corner">
+                                                        <table class="corner-table">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th rowspan="2">院校类别</th>
+                                                                    <th rowspan="2">用房类型</th>
+                                                                </tr>
+                                                                <tr>
+                                                                    <!-- 第二行为空，因为上面两个th已经跨越了两行 -->
+                                                                </tr>
+                                                            </thead>
+                                                        </table>
+                                                    </div>
+                                                    
+                                                    <!-- 冻结的表头 -->
+                                                    <div class="frozen-header">
+                                                        <table class="header-table">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th rowspan="2">基础生均面积(㎡/生)</th>
+                                                                    <th colspan="5">补贴面积(㎡/生)</th>
+                                                                </tr>
+                                                                <tr>
+                                                                    <th>全日制硕士</th>
+                                                                    <th>全日制博士</th>
+                                                                    <th>留学生补贴</th>
+                                                                    <th>留学生硕士生补贴</th>
+                                                                    <th>留学生博士生补贴</th>
+                                                                </tr>
+                                                            </thead>
+                                                        </table>
+                                                    </div>
+                                                    
+                                                    <!-- 冻结的左侧列 -->
+                                                    <div class="frozen-left">
+                                                        <table class="left-table">
+                                                            <tbody id="comprehensiveStandardsTableLeft">
+                                                                <!-- 动态生成的左侧列 -->
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                    
+                                                    <!-- 主要内容区域 -->
+                                                    <div class="scrollable-content">
+                                                        <table class="content-table">
+                                                            <tbody id="comprehensiveStandardsTable">
+                                                                <!-- 动态生成的综合标准表格内容 -->
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 操作按钮 -->
+                                <div class="card-actions">
+                                    <button class="btn btn-primary" onclick="saveAllStandards()">
+                                        保存所有配置
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 引入JavaScript文件 -->
+    <script src="../js/utils.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/componentManager.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/calculationStandards.js"></script>
+    <script>
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                console.log('测算标准管理页面开始初始化...');
+                
+                // 使用直接API调用而不是AuthManager.checkAuth()，避免自动重定向
+                const response = await fetch('/api/auth/status');
+                const result = await response.json();
+                
+                if (!result.success || !result.isLoggedIn) {
+                    showMessage('请先登录系统', 'error');
+                    setTimeout(() => {
+                        window.location.href = '/login.html';
+                    }, 2000);
+                    return;
+                }
+                
+                // 检查是否为管理员
+                if (result.user.role !== 'admin') {
+                    showMessage('您没有权限访问此页面', 'error');
+                    setTimeout(() => {
+                        window.location.href = '/index.html';
+                    }, 2000);
+                    return;
+                }
+                
+                console.log('用户认证成功:', result.user);
+                
+                // 设置全局用户信息
+                if (typeof window !== 'undefined') {
+                    window.currentUser = result.user;
+                }
+
+            } catch (error) {
+                console.error('认证检查失败:', error);
+                showMessage('认证检查失败，请重新登录', 'error');
+                setTimeout(() => {
+                    window.location.href = '/login.html';
+                }, 2000);
+                return;
+            }
+
+            // 加载页面组件
+            await ComponentManager.loadComponent('../components/sidebar.html', 'sidebarContainer', {
+                activeMenu: 'menu-calculation-standards'
+            });
+            
+            await ComponentManager.loadComponent('../components/page-header.html', 'pageHeaderContainer', {
+                title: '标准管理',
+                description: '管理和调整高校建筑面积缺口测算的各项标准参数'
+            });
+
+            // 组件加载完成后，更新用户信息显示
+            if (window.currentUser) {
+                if (typeof AuthManager !== 'undefined' && AuthManager.updateUserInfo) {
+                    AuthManager.updateUserInfo(window.currentUser);
+                } else {
+                    // 备用的用户信息更新方法
+                    const userName = document.getElementById('userName');
+                    const userRole = document.getElementById('userRole');
+                    const userAvatar = document.getElementById('userAvatar');
+                    
+                    if (userName) userName.textContent = window.currentUser.real_name || window.currentUser.username || '管理员';
+                    if (userRole) userRole.textContent = '管理员';
+                    if (userAvatar) userAvatar.textContent = (window.currentUser.real_name || window.currentUser.username || 'A').charAt(0).toUpperCase();
+                    
+                    // 手动更新菜单权限
+                    if (typeof updateMenuVisibility === 'function') {
+                        updateMenuVisibility(window.currentUser);
+                    }
+                }
+            }
+
+            // 初始化标准管理器
+            if (typeof CalculationStandardsManager !== 'undefined') {
+                await CalculationStandardsManager.initialize();
+            }
+        });
+
+        // 显示消息
+        function showMessage(message, type = 'info') {
+            const messageArea = document.getElementById('messageArea');
+            const alertClass = type === 'error' ? 'alert-error' : 
+                              type === 'success' ? 'alert-success' : 
+                              type === 'warning' ? 'alert-warning' : 'alert-info';
+            
+            messageArea.innerHTML = `<div class="alert ${alertClass}">${message}</div>`;
+            
+            // 3秒后自动消失
+            setTimeout(() => {
+                messageArea.innerHTML = '';
+            }, 3000);
+        }
+
+        // 退出登录函数
+        function logout() {
+            if (confirm('确定要退出登录吗？')) {
+                try {
+                    fetch('/api/auth/logout', { method: 'POST' })
+                        .then(() => {
+                            window.location.href = '/login.html';
+                        })
+                        .catch(() => {
+                            window.location.href = '/login.html';
+                        });
+                } catch (error) {
+                    window.location.href = '/login.html';
+                }
+            }
+        }
+        
+        // 页面跳转函数（兼容侧边栏中的showPage调用）
+        function showPage(pageId) {
+            console.log('测算标准管理页面中的showPage被调用:', pageId);
+            try {
+                switch(pageId) {
+                    case 'data-entry':
+                        window.location.href = '/index.html';
+                        break;
+                    case 'data-management':
+                        window.location.href = '/html/data-management.html';
+                        break;
+                    case 'statistics':
+                        window.location.href = '/html/statistics.html';
+                        break;
+                    default:
+                        console.warn('未知的页面ID:', pageId);
+                        window.location.href = '/index.html';
+                }
+            } catch (error) {
+                console.error('页面跳转失败:', error);
+                window.location.href = '/index.html';
+            }
+        }
+        
+        // 全局暴露函数
+        window.logout = logout;
+        window.showPage = showPage;
+    </script>
+</body>
+</html>

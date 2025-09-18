@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户管理 - 高校建筑面积缺口计算器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-bottom: 1px solid #e9ecef;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 24px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid #e9ecef;
+            background: #f8f9fa;
+        }
+
+        .card-header h2 {
+            color: #2c3e50;
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .card-header p {
+            color: #6c757d;
+            margin: 0;
+        }
+
+        .card-body {
+            padding: 30px;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 12px;
+        }
+
+        .table th,
+        .table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 30px;
+            color: #6c757d;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid transparent;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .role-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .role-admin {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .role-user {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .role-construction_center {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .role-school {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 500px;
+            margin: 10% auto;
+            padding: 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: #2c3e50;
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .modal-footer {
+            padding: 20px 30px;
+            border-top: 1px solid #e9ecef;
+            text-align: right;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+        }
+
+        .close {
+            float: right;
+            font-size: 24px;
+            font-weight: bold;
+            color: #999;
+            cursor: pointer;
+            margin-top: -25px;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .username-cell {
+            max-width: 80px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .school-name-cell {
+            max-width: 80px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 15px;
+                margin: 20px auto;
+            }
+
+            .header {
+                padding: 15px 20px;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .card-body {
+                padding: 20px;
+            }
+
+            .table {
+                font-size: 14px;
+            }
+
+            .table th,
+            .table td {
+                padding: 8px 10px;
+            }
+
+            .modal-content {
+                margin: 5% auto;
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>用户管理</h1>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="showCreateUserModal()">
+                <span>+</span>
+                新增用户
+            </button>
+            <a href="../index.html" class="btn btn-secondary">返回首页</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h2>用户列表</h2>
+            </div>
+            <div class="card-body">
+                <div id="alert" style="display: none;"></div>
+                
+                <div class="loading" id="loading">
+                    <p>正在加载用户数据...</p>
+                </div>
+                
+                <div id="userTableContainer" style="display: none;">
+                    <table class="table" id="userTable">
+                        <thead>
+                            <tr>
+                                <th>UID</th>
+                                <th>用户名</th>
+                                <th>邮箱</th>
+                                <th>角色</th>
+                                <th>学校名称</th>
+                                <th>状态</th>
+                                <th>创建时间</th>
+                                <th>最后登录</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userTableBody">
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    <h3>暂无用户数据</h3>
+                    <p>系统中还没有任何用户，点击上方按钮创建第一个用户。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建用户模态框 -->
+    <div id="createUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>新增用户</h3>
+                <span class="close" onclick="hideCreateUserModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="createUserForm">
+                    <div class="form-group">
+                        <label for="username">UID *</label>
+                        <input type="text" id="username" name="username" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">密码 *</label>
+                        <input type="password" id="password" name="password" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="real_name">用户名</label>
+                        <input type="text" id="real_name" name="real_name" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">邮箱</label>
+                        <input type="email" id="email" name="email" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="role">角色 *</label>
+                        <select id="role" name="role" class="form-control" required onchange="toggleSchoolNameField()">
+                            <option value="">请选择角色</option>
+                            <option value="admin">管理员</option>
+                            <option value="construction_center">基建中心</option>
+                            <option value="school">学校用户</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="schoolNameGroup" style="display: none;">
+                        <label for="school_name">学校名称 *</label>
+                        <select id="school_name" name="school_name" class="form-control">
+                            <option value="">请选择学校</option>
+                            <!-- 学校选项将通过JavaScript动态加载 -->
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="hideCreateUserModal()">取消</button>
+                <button type="button" class="btn btn-primary" onclick="createUser()">创建用户</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let users = [];
+
+        // 获取角色显示名称
+        function getRoleDisplayName(role) {
+            switch(role) {
+                case 'admin':
+                    return '管理员';
+                case 'construction_center':
+                    return '基建中心';
+                case 'school':
+                    return '学校用户';
+                default:
+                    return '用户';
+            }
+        }
+
+        // 页面加载时获取用户列表
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUsers();
+        });
+
+        // 加载学校列表
+        async function loadSchools() {
+            try {
+                const response = await fetch('/api/schools/names');
+                const result = await response.json();
+
+                if (result.success) {
+                    const schoolSelect = document.getElementById('school_name');
+                    // 清空现有选项，保留默认选项
+                    schoolSelect.innerHTML = '<option value="">请选择学校</option>';
+                    
+                    // 添加学校选项
+                    result.data.forEach(schoolName => {
+                        const option = document.createElement('option');
+                        option.value = schoolName;
+                        option.textContent = schoolName;
+                        schoolSelect.appendChild(option);
+                    });
+                } else {
+                    console.error('加载学校列表失败:', result.message);
+                }
+            } catch (error) {
+                console.error('加载学校列表失败:', error);
+            }
+        }
+
+        // 加载用户列表
+        async function loadUsers() {
+            const loading = document.getElementById('loading');
+            const userTableContainer = document.getElementById('userTableContainer');
+            const emptyState = document.getElementById('emptyState');
+
+            loading.style.display = 'block';
+            userTableContainer.style.display = 'none';
+            emptyState.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/auth/users');
+                const result = await response.json();
+
+                if (result.success) {
+                    users = result.users;
+                    if (users.length > 0) {
+                        renderUserTable();
+                        userTableContainer.style.display = 'block';
+                    } else {
+                        emptyState.style.display = 'block';
+                    }
+                } else {
+                    showAlert('加载用户列表失败: ' + result.message, 'error');
+                    emptyState.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('加载用户列表失败:', error);
+                showAlert('网络错误，请稍后重试', 'error');
+                emptyState.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        // 渲染用户表格
+        function renderUserTable() {
+            const tbody = document.getElementById('userTableBody');
+            tbody.innerHTML = '';
+
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="username-cell" title="${user.username}">${user.username}</td>
+                    <td class="username-cell" title="${user.real_name || '-'}">${user.real_name || '-'}</td>
+                    <td>${user.email || '-'}</td>
+                    <td>
+                        <span class="role-badge role-${user.role}">
+                            ${getRoleDisplayName(user.role)}
+                        </span>
+                    </td>
+                    <td class="school-name-cell" title="${user.school_name || '-'}">${user.school_name || '-'}</td>
+                    <td>
+                        <span class="status-badge status-${user.status}">
+                            ${user.status === 'active' ? '激活' : '禁用'}
+                        </span>
+                    </td>
+                    <td>${formatDate(user.created_at)}</td>
+                    <td>${user.last_login ? formatDate(user.last_login) : '-'}</td>
+                    <td>
+                        <div class="action-buttons">
+                            ${user.role === 'admin' ? 
+                                '<span style="color: #6c757d; font-size: 12px;">系统管理员</span>' :
+                                `${user.status === 'active' ? 
+                                    `<button class="btn btn-danger btn-sm" onclick="toggleUserStatus(${user.id}, 'inactive')">禁用</button>` :
+                                    `<button class="btn btn-success btn-sm" onclick="toggleUserStatus(${user.id}, 'active')">激活</button>`
+                                }
+                                <button class="btn btn-danger btn-sm" onclick="deleteUser(${user.id}, '${user.username}')" style="background: #dc3545;">删除</button>`
+                            }
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // 显示创建用户模态框
+        function showCreateUserModal() {
+            document.getElementById('createUserModal').style.display = 'block';
+            // 加载学校列表
+            loadSchools();
+        }
+
+        // 隐藏创建用户模态框
+        function hideCreateUserModal() {
+            document.getElementById('createUserModal').style.display = 'none';
+            document.getElementById('createUserForm').reset();
+            document.getElementById('schoolNameGroup').style.display = 'none';
+        }
+
+        // 切换学校名称字段显示
+        function toggleSchoolNameField() {
+            const roleSelect = document.getElementById('role');
+            const schoolNameGroup = document.getElementById('schoolNameGroup');
+            const schoolNameSelect = document.getElementById('school_name');
+            
+            if (roleSelect.value === 'school') {
+                schoolNameGroup.style.display = 'block';
+                schoolNameSelect.required = true;
+            } else {
+                schoolNameGroup.style.display = 'none';
+                schoolNameSelect.required = false;
+                schoolNameSelect.value = '';
+            }
+        }
+
+        // 创建用户
+        async function createUser() {
+            const form = document.getElementById('createUserForm');
+            const formData = new FormData(form);
+            
+            const username = formData.get('username').trim();
+            const password = formData.get('password').trim();
+            const role = formData.get('role');
+
+            if (!username || !password || !role) {
+                alert('UID、密码和角色不能为空');
+                return;
+            }
+
+            if (role === 'school' && !formData.get('school_name')) {
+                alert('学校用户必须选择学校名称');
+                return;
+            }
+
+            const userData = {
+                username: username,
+                password: password,
+                real_name: formData.get('real_name')?.trim() || null,
+                email: formData.get('email')?.trim() || null,
+                role: role,
+                school_name: formData.get('school_name') || null
+            };
+
+            try {
+                const response = await fetch('/api/auth/create-user', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(userData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert('用户创建成功', 'success');
+                    hideCreateUserModal();
+                    loadUsers(); // 重新加载用户列表
+                } else {
+                    alert('创建用户失败: ' + result.message);
+                }
+            } catch (error) {
+                console.error('创建用户失败:', error);
+                alert('网络错误，请稍后重试');
+            }
+        }
+
+        // 切换用户状态
+        async function toggleUserStatus(userId, newStatus) {
+            // 检查是否是管理员账号
+            const user = users.find(u => u.id === userId);
+            if (user && user.role === 'admin') {
+                alert('系统管理员账号不允许禁用或激活操作');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/auth/user/${userId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert(`用户状态已更新为${newStatus === 'active' ? '激活' : '禁用'}`, 'success');
+                    loadUsers(); // 重新加载用户列表
+                } else {
+                    alert('更新用户状态失败: ' + result.message);
+                }
+            } catch (error) {
+                console.error('更新用户状态失败:', error);
+                alert('网络错误，请稍后重试');
+            }
+        }
+
+        // 删除用户
+        async function deleteUser(userId, username) {
+            // 检查是否是管理员账号
+            const user = users.find(u => u.id === userId);
+            if (user && user.role === 'admin') {
+                alert('系统管理员账号不允许删除');
+                return;
+            }
+
+            if (!confirm(`确定要删除用户 "${username}" 吗？\n\n注意：此操作不可逆，用户的所有数据都将被永久删除！`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/auth/user/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert('用户删除成功', 'success');
+                    loadUsers(); // 重新加载用户列表
+                } else {
+                    alert('删除用户失败: ' + result.message);
+                }
+            } catch (error) {
+                console.error('删除用户失败:', error);
+                alert('网络错误，请稍后重试');
+            }
+        }
+
+        // 显示提示信息
+        function showAlert(message, type) {
+            const alertDiv = document.getElementById('alert');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            alertDiv.style.display = 'block';
+
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                alertDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        // 格式化日期
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            const modal = document.getElementById('createUserModal');
+            if (event.target === modal) {
+                hideCreateUserModal();
+            }
+        }
+    </script>
+</body>
+</html>

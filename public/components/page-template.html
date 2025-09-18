@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{PAGE_TITLE}} - 高校建筑面积缺口计算器</title>
+    <!-- 引入模块化CSS样式 -->
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边栏容器 -->
+        <div id="sidebarContainer"></div>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <div class="page-content active">
+                <!-- 页面头部容器 -->
+                <div id="pageHeaderContainer"></div>
+                
+                <!-- 页面内容容器 -->
+                <div class="content-body" id="pageContentContainer">
+                    {{PAGE_CONTENT}}
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 引入外部脚本 -->
+    <script src="../js/utils.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/main.js"></script>
+    <script src="../js/componentManager.js"></script>
+    {{ADDITIONAL_SCRIPTS}}
+    
+    <script>
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                console.log('{{PAGE_NAME}}页面加载完成，开始初始化...');
+                
+                // 初始化页面结构
+                await ComponentManager.initPageStructure({
+                    title: '{{PAGE_TITLE}}',
+                    description: '{{PAGE_DESCRIPTION}}',
+                    activeMenu: '{{ACTIVE_MENU}}'
+                });
+                
+                // 初始化认证模块
+                await AuthManager.initialize();
+                console.log('认证模块初始化完成');
+
+                // 立即更新用户信息显示
+                const user = AuthManager.getCurrentUser();
+                if (user) {
+                    AuthManager.updateUserInfo(user);
+                    const userName = document.getElementById('userName');
+                    if (userName && userName.textContent === '加载中...') {
+                        userName.textContent = user.real_name || user.username || '未知用户';
+                    }
+                    
+                    // 根据用户角色显示/隐藏菜单项
+                    AuthManager.updateMenuVisibility(user.role);
+                    
+                    {{PERMISSION_CHECK}}
+                }
+
+                {{MODULE_INITIALIZATION}}
+
+            } catch (error) {
+                console.error('页面初始化失败:', error);
+                if (error.message.includes('unauthorized') || error.message.includes('login')) {
+                    window.location.href = '../login.html';
+                }
+            }
+
+            // 检查数据库状态
+            if (typeof CommonAPI !== 'undefined') {
+                CommonAPI.checkDatabaseStatus().then(result => {
+                    if (!result.success) {
+                        console.warn('数据库连接状态检查失败:', result.error);
+                    }
+                }).catch(error => {
+                    console.warn('数据库状态检查出错:', error);
+                });
+            }
+        });
+
+        // 退出登录函数
+        function logout() {
+            if (typeof AuthManager !== 'undefined') {
+                AuthManager.logout();
+            }
+        }
+
+        {{CUSTOM_FUNCTIONS}}
+    </script>
+</body>
+</html>

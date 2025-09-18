@@ -1,0 +1,124 @@
+# 环境变量文件（包含敏感信息，不应提交到版本控制）
+.env
+
+# 依赖目录
+node_modules/
+
+# 日志文件
+*.log
+logs/
+
+# 临时文件
+*.tmp
+*.temp
+
+# Cookie 文件（可能包含认证信息）
+cookies.txt
+
+# Excel输出文件（根据需要可以选择是否忽略）
+output/*.xlsx
+output/*.xls
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# IDE配置文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 备份文件
+backups/
+*.bak
+*.backup
+
+# 压缩文件
+*.zip
+*.tar.gz
+*.rar
+
+# 运行时文件
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# nyc test coverage
+.nyc_output
+
+# Grunt intermediate storage
+.grunt
+
+# Bower dependency directory
+bower_components
+
+# node-waf configuration
+.lock-wscript
+
+# Compiled binary addons
+build/Release
+
+# Dependency directories
+jspm_packages/
+
+# TypeScript v1 declaration files
+typings/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files
+.cache/
+# public
+
+# 注意：注释掉 public 规则，因为我们需要追踪 public/ 目录中的前端资源
+# 如果使用 Gatsby，可以具体指定要忽略的 Gatsby 构建文件：
+# public/static/
+# public/page-data/
+
+# Storybook build outputs
+.out
+.storybook-out
+
+# Temporary folders
+tmp/
+temp/
+
+# Backup files
+backups/
+
+# delete files
+delete/

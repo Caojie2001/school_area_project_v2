@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>历史测算 - 高校建筑面积缺口计算器</title>
+    <!-- 引入模块化CSS样式 -->
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边栏容器 -->
+        <div id="sidebarContainer"></div>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <div class="page-content active">
+                <!-- 页面头部容器 -->
+                <div id="pageHeaderContainer"></div>
+                
+                <!-- 页面内容容器 -->
+                <div class="content-body" id="pageContentContainer">
+                    <!-- 学校历史查询 -->
+                    <div class="card">
+                        <div class="search-bar">
+                            <select id="dataYearFilter" class="search-input" style="width: 12%; min-width: 100px;">
+                                <option value="all">所有测算年份</option>
+                            </select>
+                            <div style="position: relative; display: inline-block; width: 28%; min-width: 150px;">
+                                <select id="dataSchoolNameFilter" class="search-input" style="width: 100%;">
+                                    <option value="all">所有学校</option>
+                                    <!-- 学校选项将通过JavaScript动态加载 -->
+                                </select>
+                                <span id="schoolFilterLockHint" style="display: none; position: absolute; right: 5px; top: 50%; transform: translateY(-50%); color: #6c757d; font-size: 12px; pointer-events: none;">🔒 已锁定</span>
+                            </div>
+                            <div style="position: relative; display: inline-block; width: 15%; min-width: 100px;">
+                                <select id="dataUserFilter" class="search-input" style="width: 100%;">
+                                    <option value="all">所有测算用户</option>
+                                </select>
+                                <span id="userFilterLockHint" style="display: none; position: absolute; right: 5px; top: 50%; transform: translateY(-50%); color: #6c757d; font-size: 12px; pointer-events: none;">🔒 已锁定</span>
+                            </div>
+
+                            <button class="btn btn-primary" onclick="searchDataRecords()" style="width: 10%; min-width: 70px; margin-left: 8px;">查找</button>
+                            <button class="btn btn-secondary" onclick="batchDownloadSearchResults()" id="batchDownloadBtn" style="background: #28a745; color: white; width: 13%; min-width: 90px; margin-left: 8px;" disabled>批量下载</button>
+                        </div>
+                        
+                        <div id="dataHistoryResults">
+                            <div class="alert alert-info">请选择筛选条件并点击查找按钮</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 引入外部脚本 -->
+    <script src="../js/utils.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/main.js"></script>
+    <script src="../js/componentManager.js"></script>
+    <script src="../js/dataManagement.js"></script>
+    
+    <script>
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                console.log('数据管理页面加载完成，开始初始化...');
+                
+                // 初始化页面结构
+                await ComponentManager.initPageStructure({
+                    title: '数据管理',
+                    description: '查看、编辑和管理已提交的测算数据记录',
+                    activeMenu: 'menu-data-management'
+                });
+                
+                // 初始化认证模块
+                await AuthManager.initialize();
+                console.log('认证模块初始化完成');
+
+                // 立即更新用户信息显示
+                const user = AuthManager.getCurrentUser();
+                if (user) {
+                    AuthManager.updateUserInfo(user);
+                    const userName = document.getElementById('userName');
+                    if (userName && userName.textContent === '加载中...') {
+                        userName.textContent = user.real_name || user.username || '未知用户';
+                    }
+                    
+                    // 根据用户角色显示/隐藏菜单项
+                    AuthManager.updateMenuVisibility(user);
+                }
+
+                // 初始化数据管理模块
+                if (typeof DataManagementManager !== 'undefined') {
+                    await DataManagementManager.initialize();
+                    console.log('数据管理模块初始化完成');
+                }
+
+            } catch (error) {
+                console.error('页面初始化失败:', error);
+                if (error.message.includes('unauthorized') || error.message.includes('login')) {
+                    window.location.href = '../login.html';
+                }
+            }
+
+            // 检查数据库状态
+            if (typeof CommonAPI !== 'undefined') {
+                CommonAPI.checkDatabaseStatus().then(result => {
+                    if (!result.success) {
+                        console.warn('数据库连接状态检查失败:', result.error);
+                    }
+                }).catch(error => {
+                    console.warn('数据库状态检查出错:', error);
+                });
+            }
+        });
+
+        // 退出登录函数
+        function logout() {
+            if (typeof AuthManager !== 'undefined') {
+                AuthManager.logout();
+            }
+        }
+
+        // 数据管理相关函数
+        async function searchDataRecords() {
+            if (typeof DataManagementManager !== 'undefined' && DataManagementManager.searchDataRecords) {
+                await DataManagementManager.searchDataRecords();
+            } else {
+                console.error('数据管理功能未正确加载');
+            }
+        }
+
+        async function batchDownloadSearchResults() {
+            if (typeof DataManagementManager !== 'undefined' && DataManagementManager.batchDownloadSearchResults) {
+                await DataManagementManager.batchDownloadSearchResults();
+            } else {
+                console.error('批量下载功能未正确加载');
+            }
+        }
+
+        // 页面跳转函数（覆盖main.js中的版本）
+        function showPage(pageId) {
+            console.log('数据管理页面中的showPage被调用:', pageId);
+            try {
+                switch(pageId) {
+                    case 'data-entry':
+                        window.location.href = '/index.html';
+                        break;
+                    case 'data-management':
+                        // 已经在数据管理页面，不需要跳转
+                        break;
+                    case 'statistics':
+                        window.location.href = '/html/statistics.html';
+                        break;
+                    case 'calculation-standards':
+                        window.location.href = '/html/calculation-standards.html';
+                        break;
+                    case 'user-management':
+                        window.location.href = '/html/user-management.html';
+                        break;
+                    default:
+                        console.warn('未知的页面ID:', pageId);
+                        window.location.href = '/index.html';
+                }
+            } catch (error) {
+                console.error('页面跳转失败:', error);
+                window.location.href = '/index.html';
+            }
+        }
+
+        // 全局暴露函数，覆盖main.js中的版本
+        window.showPage = showPage;
+    </script>
+</body>
+</html>
