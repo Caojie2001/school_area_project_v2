@@ -11,29 +11,13 @@
  * - 提供API调用的缓存机制
  * 
  * 【主要功能模块】
- * 1. API基础/**
- * DELETE请求封装
- * @param {string} endpoint API端点
- * @param {object} data 请求数据（可选）
- * @param {object} options 请求选项
- * @returns {Promise} 请求结果
+ * 1. API基础请求方法 (apiGet, apiPost, apiPut, apiDelete)
+ * 2. 认证相关API (AuthAPI)
+ * 3. 数据管理API (DataManagementAPI)
+ * 4. 统计分析API (StatisticsAPI)
+ * 5. 用户管理API (UserManagementAPI)
+ * 6. 学校相关API (SchoolsAPI)
  */
-async function apiDelete(endpoint, data = null, options = {}) {
-    const config = {
-        ...options,
-        method: 'DELETE'
-    };
-    
-    if (data) {
-        config.body = JSON.stringify(data);
-        config.headers = {
-            'Content-Type': 'application/json',
-            ...(config.headers || {})
-        };
-    }
-    
-    return apiRequest(endpoint, config);
-}
 
 // ========================================
 // API模块说明文档
@@ -43,7 +27,10 @@ async function apiDelete(endpoint, data = null, options = {}) {
  * API模块功能说明：
  * 
  * 1. 基础配置
- *    - A
+ *    - API_CONFIG: 全局配置
+ *    - API_ENDPOINTS: 端点定义
+ * 
+ * 2. 认证相关API
  *    - AuthAPI.checkStatus() 检查登录状态
  *    - AuthAPI.login() 用户登录
  *    - AuthAPI.logout() 用户登出
@@ -326,7 +313,7 @@ async function apiDelete(endpoint, data = {}, options = {}) {
     return apiRequest(endpoint, {
         ...options,
         method: 'DELETE',
-        body: Object.keys(data).length > 0 ? JSON.stringify(data) : undefined
+        body: data && Object.keys(data).length > 0 ? JSON.stringify(data) : undefined
     });
 }
 
@@ -568,6 +555,15 @@ const DataManagementAPI = {
     },
     
     /**
+     * 批量下载（按学校分组打包）
+     * @param {object} downloadParams 下载参数
+     * @returns {Promise} 下载结果
+     */
+    async batchDownload(downloadParams) {
+        return apiPost('/batch-download', downloadParams);
+    },
+    
+    /**
      * 获取历史数据
      * @param {object} filters 筛选条件
      * @returns {Promise} 历史数据
@@ -643,6 +639,10 @@ const DataManagementAPI = {
         
         if (filters.user && filters.user !== 'all') {
             params.push(`user=${encodeURIComponent(filters.user)}`);
+        }
+        
+        if (filters.calculationCriteria && filters.calculationCriteria !== 'all') {
+            params.push(`calculationCriteria=${encodeURIComponent(filters.calculationCriteria)}`);
         }
         
         let url = '/schools/latest';
@@ -802,6 +802,15 @@ const CommonAPI = {
     },
 
     /**
+     * 获取学生规划参数（按年份分组）
+     * @param {object} options API调用选项，如 {useCache: false}
+     * @returns {Promise} 学生规划参数列表
+     */
+    async getStudentPlanningParams(options = {}) {
+        return apiGet('/student-planning-params', {}, options);
+    },
+
+    /**
      * 获取用户列表
      * @param {object} options API调用选项，如 {useCache: false}
      * @returns {Promise} 用户列表
@@ -817,6 +826,15 @@ const CommonAPI = {
      */
     async batchExport(params) {
         return apiPost('/batch-export', params);
+    },
+
+    /**
+     * 批量下载（按学校分组打包）
+     * @param {object} params 下载参数
+     * @returns {Promise} 下载结果
+     */
+    async batchDownload(params) {
+        return apiPost('/batch-download', params);
     },
 
     /**

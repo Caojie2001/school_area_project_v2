@@ -83,12 +83,16 @@ const ROLE_DISPLAY_NAMES = {
 
 /**
  * 菜单权限配置
+ * 注意: 只需要配置受限制的菜单项
+ * 未在此配置的菜单项默认对所有角色可见
  */
 const MENU_PERMISSIONS = {
+    'menu-data-entry': [UserRoles.ADMIN, UserRoles.CONSTRUCTION_CENTER, UserRoles.SCHOOL],
     'menu-data-management': [UserRoles.ADMIN, UserRoles.CONSTRUCTION_CENTER, UserRoles.SCHOOL],
-    'menu-user-management': [UserRoles.ADMIN],
+    'menu-area-management': [UserRoles.ADMIN, UserRoles.CONSTRUCTION_CENTER, UserRoles.SCHOOL],
     'menu-statistics': [UserRoles.ADMIN, UserRoles.CONSTRUCTION_CENTER],
-    'menu-calculation-standards': [UserRoles.ADMIN]
+    'menu-calculation-standards': [UserRoles.ADMIN],
+    'menu-user-management': [UserRoles.ADMIN]
 };
 
 // ========================================
@@ -107,10 +111,19 @@ const AuthManager = {
     async initialize() {
         try {
             console.log('正在初始化认证模块...');
-            await this.checkUserStatus();
+            const isLoggedIn = await this.checkUserStatus();
+            if (!isLoggedIn) {
+                // checkUserStatus 已经处理了重定向，这里抛出错误停止后续执行
+                throw new Error('用户未登录，已重定向到登录页');
+            }
         } catch (error) {
             console.error('认证模块初始化失败:', error);
-            this.redirectToLogin();
+            // 如果错误不是重定向相关的，则执行重定向
+            if (!error.message.includes('重定向')) {
+                this.redirectToLogin();
+            }
+            // 重新抛出错误，让调用方知道初始化失败
+            throw error;
         }
     },
     
@@ -176,7 +189,10 @@ const AuthManager = {
      */
     redirectToLogin() {
         console.log('重定向到登录页面');
-        window.location.href = '/login.html';
+        // 保存当前页面路径，以便登录后返回
+        const currentPath = window.location.pathname + window.location.search + window.location.hash;
+        const redirectUrl = encodeURIComponent(currentPath);
+        window.location.href = `/login.html?redirect=${redirectUrl}`;
     },
     
     /**
@@ -533,7 +549,10 @@ async function logout() {
  */
 function redirectToLogin() {
     console.log('重定向到登录页面');
-    window.location.href = '/login.html';
+    // 保存当前页面路径，以便登录后返回
+    const currentPath = window.location.pathname + window.location.search + window.location.hash;
+    const redirectUrl = encodeURIComponent(currentPath);
+    window.location.href = `/login.html?redirect=${redirectUrl}`;
 }
 
 // ========================================

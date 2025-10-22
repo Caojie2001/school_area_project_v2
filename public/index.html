@@ -6,47 +6,280 @@
     <title>高校建筑面积缺口计算器</title>
     <!-- 引入模块化CSS样式 -->
     <link rel="stylesheet" href="css/main.css">
+    <style>
+        /* 单选下拉框样式 */
+        .custom-single-select {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .custom-single-select .select-display {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            background: white;
+            min-height: 38px;
+            display: flex;
+            align-items: center;
+        }
+
+        .custom-single-select .select-display:hover {
+            border-color: #999;
+        }
+
+        .custom-single-select .display-text {
+            color: #333;
+            font-size: 14px;
+            flex: 1;
+        }
+
+        .custom-single-select .dropdown-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            margin-top: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .custom-single-select .dropdown-list.show {
+            display: block;
+        }
+
+        .custom-single-select .option-item {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        .custom-single-select .option-item:hover {
+            background: #f5f5f5;
+        }
+
+        .custom-single-select .option-item.selected {
+            background: #e3f2fd;
+            color: #1976d2;
+            font-weight: 500;
+        }
+
+        /* 级联选择器样式（学生规划参数） */
+        .custom-cascade-select {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .custom-cascade-select .select-display {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 38px;
+        }
+
+        .custom-cascade-select .select-display:hover {
+            border-color: #999;
+        }
+
+        .custom-cascade-select .select-display.disabled {
+            background: #f5f5f5;
+            cursor: not-allowed;
+            color: #999;
+        }
+
+        .custom-cascade-select .display-text {
+            color: #333;
+            font-size: 14px;
+            flex: 1;
+        }
+
+        /* 下拉面板 */
+        .custom-cascade-select .dropdown-panel {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 4px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: none;
+            z-index: 1000;
+            max-height: 300px;
+            overflow: hidden;
+        }
+
+        .custom-cascade-select .dropdown-panel.show {
+            display: flex;
+        }
+
+        /* 左侧年份列表 */
+        .custom-cascade-select .year-list {
+            width: 40%;
+            border-right: 1px solid #eee;
+            overflow-y: auto;
+            max-height: 300px;
+        }
+
+        .custom-cascade-select .year-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 14px;
+        }
+
+        .custom-cascade-select .year-item:hover {
+            background: #f5f5f5;
+        }
+
+        .custom-cascade-select .year-item.active {
+            background: #e3f2fd;
+            color: #1976d2;
+            font-weight: 500;
+        }
+
+        /* 右侧测算口径列表 */
+        .custom-cascade-select .type-list {
+            width: 60%;
+            overflow-y: auto;
+            max-height: 300px;
+        }
+
+        .custom-cascade-select .type-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 14px;
+        }
+
+        .custom-cascade-select .type-item:hover {
+            background: #f5f5f5;
+        }
+
+        .custom-cascade-select .type-item.selected {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .custom-cascade-select .empty-hint {
+            padding: 20px;
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+        }
+
+        /* 多选下拉框样式 */
+        .custom-multi-select {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .custom-multi-select .select-display {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            background: white;
+            min-height: 38px;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .custom-multi-select .select-display:hover {
+            border-color: #999;
+        }
+
+        .custom-multi-select .display-text {
+            color: #333;
+            font-size: 14px;
+        }
+
+        .custom-multi-select .selected-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #e3f2fd;
+            color: #1976d2;
+            border-radius: 3px;
+            font-size: 12px;
+            margin: 2px;
+        }
+
+        .custom-multi-select .dropdown-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            margin-top: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .custom-multi-select .dropdown-list.show {
+            display: block;
+        }
+
+        .custom-multi-select .option-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .custom-multi-select .option-item:hover {
+            background: #f5f5f5;
+        }
+
+        .custom-multi-select .option-item input[type="checkbox"] {
+            cursor: pointer;
+        }
+
+        .custom-multi-select .option-item span {
+            cursor: pointer;
+            user-select: none;
+        }
+    </style>
 </head>
 <body>
     <!-- 移动端菜单按钮 -->
     <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
     
     <div class="app-container">
-        <!-- 左侧菜单 -->
-        <nav class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <h1>高校建筑面积缺口计算器</h1>
-            </div>
-            
-            <div class="sidebar-menu">
-                <a class="menu-item active" onclick="showPage('data-entry')" id="menu-data-entry">
-                    高校测算
-                </a>
-                <a class="menu-item" onclick="showPage('data-management')" id="menu-data-management">
-                    历史测算
-                </a>
-                <!-- 测算数据统计菜单项（仅基建中心和管理员可见） -->
-                <a class="menu-item menu-restricted" onclick="showPage('statistics')" id="menu-statistics">
-                    测算统计
-                </a>
-                <!-- 测算标准管理菜单项（仅管理员可见） -->
-                <a class="menu-item menu-restricted" href="/html/calculation-standards.html" id="menu-calculation-standards">
-                    标准管理
-                </a>
-                <!-- 用户管理菜单项（仅管理员可见） -->
-                <a class="menu-item menu-restricted" href="/html/user-management.html" id="menu-user-management">
-                    用户管理
-                </a>
-            </div>
-        </nav>
+        <!-- 侧边栏容器（组件化） -->
+        <div id="sidebarContainer"></div>
 
         <!-- 主内容区域 -->
         <main class="main-content">
             <!-- 数据填报页面 -->
-            <div id="page-data-entry" class="page-content active">
+            <div id="page-data-entry" class="page-content">
                 <div class="content-header">
                     <div class="content-header-left">
-                        <h2>高校测算</h2>
+                        <h2>高校测算（旧版）</h2>
                         <p>根依据规划学生总数测算规划建筑面积，与现状面积（含拟建成部分）对比，得出建筑面积缺口。</p>
                     </div>
                     <div class="content-header-right">
@@ -272,7 +505,7 @@
             </div>
 
             <!-- 数据管理页面 -->
-            <div id="page-data-management" class="page-content">
+            <div id="page-data-management" class="page-content active">
                 <div class="content-header">
                     <div class="content-header-left">
                         <h2>历史测算</h2>
@@ -293,44 +526,36 @@
                     <!-- 学校历史查询 -->
                     <div class="card">
                         <div class="search-bar">
-                            <select id="dataYearFilter" class="search-input" style="width: 12%; min-width: 100px;">
-                                <option value="all">所有测算年份</option>
-                            </select>
-                            <select id="dataSchoolNameFilter" class="search-input" style="width: 28%; min-width: 150px;">
-                                <option value="all">所有高校</option>
-                                <option value="上海大学">上海大学</option>
-                                <option value="上海交通大学医学院">上海交通大学医学院</option>
-                                <option value="上海理工大学">上海理工大学</option>
-                                <option value="上海师范大学">上海师范大学</option>
-                                <option value="上海科技大学">上海科技大学</option>
-                                <option value="华东政法大学">华东政法大学</option>
-                                <option value="上海海事大学">上海海事大学</option>
-                                <option value="上海海洋大学">上海海洋大学</option>
-                                <option value="上海中医药大学">上海中医药大学</option>
-                                <option value="上海体育大学">上海体育大学</option>
-                                <option value="上海音乐学院">上海音乐学院</option>
-                                <option value="上海戏剧学院">上海戏剧学院</option>
-                                <option value="上海电力大学">上海电力大学</option>
-                                <option value="上海对外经贸大学">上海对外经贸大学</option>
-                                <option value="上海应用技术大学">上海应用技术大学</option>
-                                <option value="上海立信会计金融学院">上海立信会计金融学院</option>
-                                <option value="上海工程技术大学">上海工程技术大学</option>
-                                <option value="上海第二工业大学">上海第二工业大学</option>
-                                <option value="上海商学院">上海商学院</option>
-                                <option value="上海电机学院">上海电机学院</option>
-                                <option value="上海政法学院">上海政法学院</option>
-                                <option value="上海健康医学院">上海健康医学院</option>
-                                <option value="上海出版印刷高等专科学校">上海出版印刷高等专科学校</option>
-                                <option value="上海旅游高等专科学校">上海旅游高等专科学校</option>
-                                <option value="上海城建职业学院">上海城建职业学院</option>
-                                <option value="上海电子信息职业技术学院">上海电子信息职业技术学院</option>
-                                <option value="上海工艺美术职业学院">上海工艺美术职业学院</option>
-                                <option value="上海农林职业技术学院">上海农林职业技术学院</option>
-                                <option value="上海健康医学院附属卫生学校(上海健康护理职业学院(筹))">上海健康医学院附属卫生学校(上海健康护理职业学院(筹))</option>
-                            </select>
-                            <select id="dataUserFilter" class="search-input" style="width: 15%; min-width: 100px;">
-                                <option value="all">所有测算用户</option>
-                            </select>
+                            <div class="custom-cascade-select" id="dataStudentPlanFilter" style="width: 20%; min-width: 150px; display: inline-block;">
+                                <div class="select-display" onclick="toggleStudentPlanDropdown()">
+                                    <span class="display-text">所有学生规划参数</span>
+                                </div>
+                                <div class="dropdown-panel" id="studentPlanDropdownPanel">
+                                    <div class="year-list" id="studentPlanYearList">
+                                        <!-- 年份列表将通过JavaScript动态加载 -->
+                                    </div>
+                                    <div class="type-list" id="studentPlanTypeList">
+                                        <!-- 测算口径列表将通过JavaScript动态加载 -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="custom-single-select" id="dataSchoolNameFilter" style="width: 28%; min-width: 150px; display: inline-block; margin-left: 8px;">
+                                <div class="select-display" onclick="toggleSchoolDropdown()">
+                                    <span class="display-text">所有学校</span>
+                                </div>
+                                <div class="dropdown-list" id="schoolDropdownList">
+                                    <!-- 学校选项将通过JavaScript动态加载 -->
+                                </div>
+                            </div>
+                            
+                            <div class="custom-multi-select" id="dataUserFilter" style="width: 15%; min-width: 100px; display: inline-block; margin-left: 8px;">
+                                <div class="select-display" onclick="toggleUserDropdown()">
+                                    <span class="display-text">请选择测算用户</span>
+                                </div>
+                                <div class="dropdown-list" id="userDropdownList">
+                                    <!-- 用户选项将通过JavaScript动态加载 -->
+                                </div>
+                            </div>
 
                             <button class="btn btn-primary" onclick="searchDataRecords()" style="width: 10%; min-width: 70px; margin-left: 8px;">查找</button>
                             <button class="btn btn-secondary" onclick="batchDownloadSearchResults()" id="batchDownloadBtn" style="width: 13%; min-width: 90px; margin-left: 8px;" disabled>批量下载</button>
@@ -347,7 +572,7 @@
             <div id="page-statistics" class="page-content">
                 <div class="content-header">
                     <div class="content-header-left">
-                        <h2>测算统计</h2>
+                        <h2>测算统计（旧版）</h2>
                         <p>查看各学校数据填报情况的总体概览。</p>
                     </div>
                     <div class="content-header-right">
@@ -562,6 +787,7 @@
     </div>
 
     <!-- 引入外部脚本 -->
+    <script src="js/componentManager.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
@@ -577,6 +803,15 @@
         document.addEventListener('DOMContentLoaded', async function() {
             try {
                 console.log('页面加载完成，开始初始化应用...');
+                
+                // 首先加载侧边栏组件
+                if (typeof ComponentManager !== 'undefined') {
+                    await ComponentManager.loadComponent('components/sidebar.html', 'sidebarContainer');
+                    console.log('✅ 侧边栏组件已加载');
+                } else {
+                    console.error('❌ ComponentManager 未加载');
+                }
+                
                 await AppManager.initialize();
                 console.log('主应用管理器初始化完成');
                 
@@ -598,6 +833,15 @@
                     if (userName1 && userName1.textContent === '加载中...') {
                         userName1.textContent = user.real_name || user.username || '未知用户';
                     }
+                    
+                    // 根据用户角色更新菜单可见性（传递完整的用户对象，不是 user.role）
+                    AuthManager.updateMenuVisibility(user);
+                }
+                
+                // 设置默认活动菜单（data-management）
+                const defaultMenu = document.getElementById('menu-data-management');
+                if (defaultMenu) {
+                    defaultMenu.classList.add('active');
                 }
             } catch (error) {
                 console.error('认证模块初始化失败:', error);
@@ -625,7 +869,214 @@
                     }
                 }
             });
+
+            // 处理 URL hash 导航
+            function handleHashNavigation() {
+                const hash = window.location.hash.replace('#', '');
+                if (hash && typeof showPage === 'function') {
+                    console.log('从 URL hash 导航到页面:', hash);
+                    showPage(hash);
+                }
+            }
+
+            // 页面加载时检查 hash
+            handleHashNavigation();
+
+            // 监听 hash 变化
+            window.addEventListener('hashchange', handleHashNavigation);
         });
+
+        // 级联选择器相关函数（学生规划参数）
+        function toggleStudentPlanDropdown() {
+            const panel = document.getElementById('studentPlanDropdownPanel');
+            console.log('toggleStudentPlanDropdown 被调用，panel:', panel);
+            if (panel) {
+                // 关闭其他下拉框
+                document.querySelectorAll('.dropdown-list.show').forEach(d => {
+                    if (d !== panel) d.classList.remove('show');
+                });
+                const wasShown = panel.classList.contains('show');
+                panel.classList.toggle('show');
+                console.log('下拉面板状态:', wasShown ? '关闭' : '打开');
+            } else {
+                console.error('找不到 studentPlanDropdownPanel 元素');
+            }
+        }
+
+        function selectStudentPlanYear(year, typeData) {
+            const yearList = document.getElementById('studentPlanYearList');
+            const typeList = document.getElementById('studentPlanTypeList');
+            
+            if (!yearList || !typeList) return;
+            
+            // 高亮选中的年份
+            yearList.querySelectorAll('.year-item').forEach(item => {
+                item.classList.remove('active', 'selected');
+                if (item.dataset.year === year.toString()) {
+                    item.classList.add('active', 'selected');
+                }
+            });
+            
+            // 填充测算口径列表
+            typeList.innerHTML = '';
+            
+            if (typeData && typeData.length > 0) {
+                typeData.forEach(item => {
+                    const typeItem = document.createElement('div');
+                    typeItem.className = 'type-item';
+                    typeItem.textContent = item.calculation_criteria || '基本表';
+                    typeItem.dataset.id = item.id;
+                    typeItem.dataset.year = year;
+                    typeItem.dataset.type = item.calculation_criteria || '基本表';
+                    typeItem.onclick = () => selectStudentPlanType(typeItem);
+                    typeList.appendChild(typeItem);
+                });
+            } else {
+                typeList.innerHTML = '<div class="empty-hint">该年份暂无数据</div>';
+            }
+        }
+
+        function selectStudentPlanType(typeItem) {
+            const container = document.getElementById('dataStudentPlanFilter');
+            const displayWrapper = container ? container.querySelector('.select-display') : null;
+            const display = displayWrapper ? displayWrapper.querySelector('.display-text') : null;
+            const panel = document.getElementById('studentPlanDropdownPanel');
+            
+            if (!display || !container) {
+                console.error('无法找到显示元素');
+                return;
+            }
+            
+            const year = typeItem.dataset.year;
+            const type = typeItem.dataset.type;
+            const id = typeItem.dataset.id;
+            
+            // 高亮选中的测算口径
+            document.querySelectorAll('#studentPlanTypeList .type-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            typeItem.classList.add('selected');
+            
+            // 更新显示文本
+            display.textContent = `${year}年/${type}`;
+            
+            // 存储选中的值到 displayWrapper（而不是 container）
+            displayWrapper.setAttribute('data-selected-id', id);
+            displayWrapper.setAttribute('data-selected-year', year);
+            displayWrapper.setAttribute('data-selected-type', type);
+            
+            // 关闭下拉面板
+            if (panel) {
+                panel.classList.remove('show');
+            }
+            
+            console.log('已选择学生规划参数:', { id, year, type });
+        }
+
+        // 单选下拉框相关函数（学校）
+        function toggleSchoolDropdown() {
+            const dropdown = document.getElementById('schoolDropdownList');
+            if (dropdown) {
+                dropdown.classList.toggle('show');
+            }
+        }
+
+        function selectSchoolOption(value, text) {
+            const display = document.querySelector('#dataSchoolNameFilter .select-display');
+            if (display) {
+                display.innerHTML = '<span class="display-text">' + text + '</span>';
+                display.setAttribute('data-value', value);
+            }
+            // 更新选中状态
+            const allOptions = document.querySelectorAll('#schoolDropdownList .option-item');
+            allOptions.forEach(opt => opt.classList.remove('selected'));
+            event.target.classList.add('selected');
+            // 关闭下拉框
+            const dropdown = document.getElementById('schoolDropdownList');
+            if (dropdown) {
+                dropdown.classList.remove('show');
+            }
+        }
+
+        // 多选下拉框相关函数
+        function toggleUserDropdown() {
+            const dropdown = document.getElementById('userDropdownList');
+            if (dropdown) {
+                dropdown.classList.toggle('show');
+            }
+        }
+
+        function toggleUserOption(element) {
+            const checkbox = element.querySelector('input[type="checkbox"]');
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+                updateUserDisplay();
+            }
+        }
+
+        function updateUserDisplay() {
+            const display = document.querySelector('#dataUserFilter .select-display');
+            const checkboxes = document.querySelectorAll('#userDropdownList input[type="checkbox"]');
+            const selectedUsers = Array.from(checkboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+
+            // 清空显示区域
+            if (!display) return;
+            display.innerHTML = '';
+
+            if (selectedUsers.length === 0) {
+                // 未选择任何用户
+                display.innerHTML = '<span class="display-text">请选择测算用户</span>';
+            } else if (selectedUsers.length === 1) {
+                // 只选择了一个用户，显示用户名（优先于"所有"判断）
+                display.innerHTML = '<span class="display-text">' + selectedUsers[0] + '</span>';
+            } else if (selectedUsers.length === checkboxes.length) {
+                // 选择了全部用户
+                display.innerHTML = '<span class="display-text">所有测算用户</span>';
+            } else {
+                // 选择了部分用户
+                display.innerHTML = '<span class="display-text">部分测算用户</span>';
+            }
+        }
+
+        // 点击外部关闭下拉框
+        document.addEventListener('click', function(e) {
+            // 关闭用户多选框
+            const userMultiSelect = document.getElementById('dataUserFilter');
+            const userDropdown = document.getElementById('userDropdownList');
+            if (userMultiSelect && userDropdown && !userMultiSelect.contains(e.target)) {
+                userDropdown.classList.remove('show');
+            }
+            
+            // 关闭学生规划参数级联选择器
+            const studentPlanSelect = document.getElementById('dataStudentPlanFilter');
+            const studentPlanPanel = document.getElementById('studentPlanDropdownPanel');
+            if (studentPlanSelect && studentPlanPanel && !studentPlanSelect.contains(e.target)) {
+                studentPlanPanel.classList.remove('show');
+            }
+            
+            // 关闭学校单选框
+            const schoolSingleSelect = document.getElementById('dataSchoolNameFilter');
+            const schoolDropdown = document.getElementById('schoolDropdownList');
+            if (schoolSingleSelect && schoolDropdown && !schoolSingleSelect.contains(e.target)) {
+                schoolDropdown.classList.remove('show');
+            }
+        });
+
+        // 全局暴露级联选择器相关函数
+        window.toggleStudentPlanDropdown = toggleStudentPlanDropdown;
+        window.selectStudentPlanYear = selectStudentPlanYear;
+        window.selectStudentPlanType = selectStudentPlanType;
+        
+        // 全局暴露单选框相关函数
+        window.toggleSchoolDropdown = toggleSchoolDropdown;
+        window.selectSchoolOption = selectSchoolOption;
+        
+        // 全局暴露多选框相关函数
+        window.toggleUserDropdown = toggleUserDropdown;
+        window.toggleUserOption = toggleUserOption;
+        window.updateUserDisplay = updateUserDisplay;
     </script>
 </body>
 </html>

@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>规划学生数管理 - 高校建筑面积缺口计算器</title>
+    <!-- 引入模块化CSS样式 -->
+    <link rel="stylesheet" href="../css/main.css">
+    <style>
+        /* 简化表格样式 */
+        .student-planning-table-container {
+            position: relative;
+            width: 100%;
+            margin-top: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        
+        .student-planning-table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+        }
+        
+        /* 表格基础样式 */
+        .student-planning-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            table-layout: auto;
+        }
+        
+        /* 表头样式 */
+        .student-planning-table th {
+            padding: 12px 8px;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 13px;
+            font-weight: 600;
+            color: #495057;
+            background: #e9ecef;
+            border: 1px solid #dee2e6;
+            white-space: nowrap;
+        }
+        
+        /* 单元格样式 */
+        .student-planning-table td {
+            padding: 10px 8px;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 13px;
+            color: #495057;
+            border: 1px solid #dee2e6;
+            white-space: nowrap;
+        }
+        
+        /* 斑马纹 */
+        .student-planning-table tbody tr:nth-child(even) td {
+            background: #f8f9fa;
+        }
+        
+        .student-planning-table tbody tr:nth-child(odd) td {
+            background: white;
+        }
+        
+        /* 滚动条样式 */
+        .student-planning-table-wrapper::-webkit-scrollbar {
+            height: 8px;
+        }
+        
+        .student-planning-table-wrapper::-webkit-scrollbar-thumb {
+            background: #bbb;
+            border-radius: 4px;
+        }
+        
+        .student-planning-table-wrapper::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边栏容器 -->
+        <div id="sidebarContainer"></div>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <div class="page-content active">
+                <!-- 页面头部容器 -->
+                <div id="pageHeaderContainer"></div>
+                
+                <!-- 页面内容容器 -->
+                <div class="content-body" id="pageContentContainer">
+                    <!-- 规划学生数管理表单 -->
+                    <div class="online-form-section" id="studentPlanningSection">
+                        <div class="form-container">
+                            
+                            <!-- 查询条件卡片 -->
+                            <div class="card" id="searchSection">
+                                <div class="form-row" style="display: flex; gap: 20px; margin-bottom: 0; align-items: flex-end;">
+                                    <!-- 学校名称选择器 -->
+                                    <div class="form-group" style="flex: 3; margin-bottom: 0;">
+                                        <label for="schoolName">学校名称 *</label>
+                                        <select id="schoolName" name="schoolName" required class="form-control">
+                                            <option value="">请选择学校</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- 规划年份选择器（九宫格） -->
+                                    <div class="form-group" style="flex: 3; margin-bottom: 0;">
+                                        <label for="plannedYearFilter">规划年份 *</label>
+                                        <div class="year-selector-container">
+                                            <input type="text" id="plannedYearFilter" name="plannedYearFilter" 
+                                                   value="2025" readonly required class="form-control year-input" 
+                                                   onclick="showYearGrid()">
+                                            <div class="year-grid-overlay" id="yearGridOverlay" style="display: none;">
+                                                <div class="year-grid-container">
+                                                    <div class="year-grid-header">
+                                                        <button type="button" class="year-nav-btn" id="yearPrevBtn" onclick="moveYearGrid(-1)">‹</button>
+                                                        <span class="year-range-text" id="yearRangeText"></span>
+                                                        <button type="button" class="year-nav-btn" id="yearNextBtn" onclick="moveYearGrid(1)">›</button>
+                                                    </div>
+                                                    <div class="year-grid" id="yearGrid">
+                                                        <!-- 年份九宫格将在这里动态生成 -->
+                                                    </div>
+                                                    <div class="year-grid-footer">
+                                                        <button type="button" class="year-close-btn" onclick="hideYearGrid()">关闭</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 查找按钮 -->
+                                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                                        <button type="button" class="btn btn-primary" onclick="searchStudentData()" 
+                                                style="width: 100%; height: 42px;">
+                                            查找
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 在校学生数据卡片 -->
+                            <div class="card" id="currentStudentsSection">
+                                <!-- 新增按钮 -->
+                                <div style="margin-bottom: 15px;">
+                                    <button type="button" class="btn btn-primary" onclick="addNewStudentData()" 
+                                            style="padding: 10px 20px; font-size: 14px; min-width: 150px;">
+                                        + 新增
+                                    </button>
+                                </div>
+                                
+                                <!-- 数据内容区域 -->
+                                <div id="studentDataContent">
+                                    <!-- 简化表格容器 -->
+                                    <div class="student-planning-table-container">
+                                        <div class="student-planning-table-wrapper">
+                                            <table class="student-planning-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th style="width: 200px;">单位/学校(机构)名称(章)</th>
+                                                        <th style="width: 100px;">规划年度</th>
+                                                        <th style="width: 150px;">测算口径</th>
+                                                        <th style="width: 130px;">学生总人数(人)</th>
+                                                        <th style="width: 150px;">全日制学生总数(人)</th>
+                                                        <th style="width: 150px;">学历留学生总数(人)</th>
+                                                        <th style="width: 150px;">更新时间</th>
+                                                        <th style="width: 100px;">创建者</th>
+                                                        <th style="width: 150px;">操作</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="studentDataTableBody">
+                                                    <!-- 数据行将在这里动态生成 -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 侧边滑出窗口 -->
+    <div id="sidePanel" class="side-panel">
+        <div class="side-panel-overlay" onclick="closeSidePanel()"></div>
+        <div class="side-panel-content">
+            <div class="side-panel-header">
+                <h3>新增规划学生数</h3>
+                <button type="button" class="close-btn" onclick="closeSidePanel()">×</button>
+            </div>
+            <div class="side-panel-body" id="sidePanelBody">
+                <!-- 表单内容将在这里动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* 侧边面板样式 */
+        .side-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .side-panel.active {
+            pointer-events: auto;
+            opacity: 1;
+        }
+
+        .side-panel-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .side-panel.active .side-panel-overlay {
+            opacity: 1;
+        }
+
+        .side-panel-content {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 1200px;
+            max-width: 90%;
+            height: 100%;
+            background: white;
+            box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .side-panel.active .side-panel-content {
+            transform: translateX(0);
+        }
+
+        .side-panel-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+        }
+
+        .side-panel-header h3 {
+            margin: 0;
+            font-size: 18px;
+            color: #2c3e50;
+        }
+
+        .close-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            font-size: 28px;
+            line-height: 1;
+            color: #6c757d;
+            cursor: pointer;
+            padding: 0;
+            transition: all 0.2s;
+        }
+
+        .close-btn:hover {
+            color: #495057;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 4px;
+        }
+
+        .side-panel-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+        }
+
+        /* 侧边面板中的表单样式调整 */
+        .side-panel-body .form-row {
+            display: block;
+            margin-bottom: 20px;
+        }
+
+        .side-panel-body .form-group {
+            margin-bottom: 20px;
+        }
+
+        .side-panel-body .button-group {
+            position: sticky;
+            bottom: 0;
+            background: white;
+            padding: 20px 0 0 0;
+            border-top: 1px solid #e9ecef;
+            margin-top: 30px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+    </style>
+
+    <!-- 引入必要的脚本 -->
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/componentManager.js"></script>
+    <script src="../js/studentPlanning.js"></script>
+
+    <!-- 页面初始化脚本 -->
+    <script>
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                console.log('规划学生数管理页面开始加载...');
+                
+                // 初始化页面结构
+                await ComponentManager.initPageStructure({
+                    title: '规划学生数管理',
+                    description: '维护各规划年度的学生人数',
+                    activeMenu: 'menu-student-planning'
+                });
+                
+                // 初始化认证模块
+                await AuthManager.initialize();
+                console.log('认证模块初始化完成');
+
+                // 立即更新用户信息显示
+                const user = AuthManager.getCurrentUser();
+                if (user) {
+                    AuthManager.updateUserInfo(user);
+                    const userName = document.getElementById('userName');
+                    if (userName && userName.textContent === '加载中...') {
+                        userName.textContent = user.real_name || user.username || '未知用户';
+                    }
+                    
+                    // 根据用户角色显示/隐藏菜单项
+                    AuthManager.updateMenuVisibility(user);
+                }
+                
+                // 初始化页面内容
+                initializePage();
+                
+                console.log('规划学生数管理页面初始化成功');
+            } catch (error) {
+                console.error('页面初始化失败:', error);
+                // 如果是重定向相关错误，不做任何处理（已经在重定向中）
+                if (error.message && error.message.includes('重定向')) {
+                    console.log('正在重定向到登录页，停止页面初始化');
+                    return;
+                }
+                // 其他错误显示提示
+                showError('页面初始化失败，请刷新重试');
+            }
+        });
+
+        /**
+         * 初始化页面内容
+         */
+        function initializePage() {
+            console.log('规划学生数管理页面内容初始化...');
+            
+            // 加载学校列表
+            loadSchoolList();
+            
+            // 初始化年份九宫格
+            initYearGrid();
+            
+            // 自动加载当前用户的所有记录
+            loadStudentDataByFilter('all', 'all');
+            
+            // 绑定按钮事件（如果 studentPlanning.js 没有处理）
+            // 这里的事件已经在 HTML 的 onclick 中定义了
+            
+            console.log('页面内容初始化完成');
+        }
+
+        /**
+         * 加载学校列表
+         */
+        async function loadSchoolList() {
+            try {
+                const user = AuthManager.getCurrentUser();
+                const schoolSelect = document.getElementById('schoolName');
+                
+                if (!schoolSelect) {
+                    console.error('未找到学校选择下拉框');
+                    return;
+                }
+
+                // 获取学校注册表
+                const response = await fetch('/api/schools/registry', {
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error('获取学校列表失败');
+                }
+
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    // 清空现有选项（保留第一个"请选择学校"）
+                    schoolSelect.innerHTML = '<option value="">请选择学校</option>';
+                    
+                    // 添加学校选项
+                    result.data.forEach(school => {
+                        const option = document.createElement('option');
+                        option.value = school.school_name;
+                        option.textContent = school.school_name;
+                        option.dataset.schoolType = school.school_type || '';
+                        schoolSelect.appendChild(option);
+                    });
+
+                    // 如果是学校用户，固定选择对应学校
+                    if (user && user.role === 'school' && user.school_name) {
+                        schoolSelect.value = user.school_name;
+                        schoolSelect.disabled = true;
+                        schoolSelect.style.background = '#e9ecef';
+                        schoolSelect.style.cursor = 'not-allowed';
+                        
+                        console.log('学校用户，已固定学校选择:', user.school_name);
+                    }
+                    
+                    console.log('学校列表加载成功，共', result.data.length, '所学校');
+                } else {
+                    throw new Error('学校数据格式错误');
+                }
+            } catch (error) {
+                console.error('加载学校列表失败:', error);
+                showError('加载学校列表失败: ' + error.message);
+            }
+        }
+
+        /**
+         * 学校选择改变处理
+         */
+        function handleSchoolChange() {
+            const schoolName = document.getElementById('schoolName').value;
+            if (schoolName) {
+                console.log('选择学校:', schoolName);
+                // 可以在这里自动加载该学校的已有数据
+                autoLoadStudentData();
+            }
+        }
+
+        /**
+         * 自动加载学生数据
+         */
+        async function autoLoadStudentData() {
+            const schoolName = document.getElementById('schoolName').value;
+            if (!schoolName) {
+                return;
+            }
+            
+            try {
+                console.log('正在加载学生数据...', schoolName);
+                // 调用 studentPlanning.js 中的加载数据函数
+                if (typeof loadStudentData === 'function') {
+                    await loadStudentData();
+                }
+            } catch (error) {
+                console.error('自动加载学生数据失败:', error);
+            }
+        }
+
+        /**
+         * 显示错误信息
+         */
+        function showError(message) {
+            console.error(message);
+            alert(message);
+        }
+
+        /**
+         * 新增学生数据
+         */
+        async function addNewStudentData() {
+            console.log('点击新增学生数据按钮');
+            
+            // 获取当前用户信息
+            const user = AuthManager.getCurrentUser();
+            const userName = user ? (user.real_name || user.username) : '未知用户';
+            const userRole = user ? user.role : '';
+            const userSchool = user ? user.school_name : '';
+            
+            // 打开侧边面板
+            openSidePanel();
+            
+            // 获取侧边面板内容区域
+            const panelBody = document.getElementById('sidePanelBody');
+            
+            // 获取学校列表
+            let schoolOptions = '<option value="">请选择学校</option>';
+            try {
+                const response = await fetch('/api/schools/registry', {
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success && result.data) {
+                        result.data.forEach(school => {
+                            const selected = (userRole === 'school' && school.school_name === userSchool) ? 'selected' : '';
+                            schoolOptions += `<option value="${school.school_name}" ${selected}>${school.school_name}</option>`;
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('获取学校列表失败:', error);
+            }
+            
+            // 判断学校字段是否禁用
+            const schoolDisabled = (userRole === 'school') ? 'disabled' : '';
+            
+            // 获取数据来源列表
+            let dataSourceOptions = '';
+            try {
+                const dsResponse = await fetch('/api/student-data-sources', {
+                    credentials: 'include'
+                });
+                if (dsResponse.ok) {
+                    const dsResult = await dsResponse.json();
+                    if (dsResult.success && dsResult.data) {
+                        dsResult.data.forEach(source => {
+                            dataSourceOptions += `<option value="${source.data_source}">${source.data_source}</option>`;
+                        });
+                        // 添加"其他"选项
+                        dataSourceOptions += '<option value="其他">其他</option>';
+                    }
+                }
+            } catch (error) {
+                console.error('获取数据来源列表失败:', error);
+            }
+            
+            // 创建表单内容
+            panelBody.innerHTML = `
+                <div class="form-group">
+                    <label>创建者</label>
+                    <input type="text" class="form-control" value="${userName}" readonly 
+                           style="background-color: #e9ecef; cursor: not-allowed;">
+                </div>
+                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label for="panelSchoolName">单位/学校(机构)名称(章) *</label>
+                        <select id="panelSchoolName" name="panelSchoolName" class="form-control" ${schoolDisabled}>
+                            ${schoolOptions}
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label for="panelPlannedYear">规划年度 *</label>
+                        <input type="text" id="panelPlannedYear" name="panelPlannedYear" 
+                               class="form-control" readonly placeholder="请选择年度"
+                               onclick="showYearGridForPanel()" style="cursor: pointer; background-color: white;">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label for="panelCalculationCriteria">测算口径 *</label>
+                        <select id="panelCalculationCriteria" name="panelCalculationCriteria" 
+                                class="form-control" onchange="handleCalculationCriteriaChange()">
+                            <option value="">请选择测算口径</option>
+                            ${dataSourceOptions}
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label style="color: transparent; user-select: none;">占位</label>
+                        <input type="text" id="panelCustomCriteria" name="panelCustomCriteria" 
+                               class="form-control" placeholder="请填写具体测算口径"
+                               style="background-color: #e9ecef; cursor: not-allowed;" 
+                               readonly disabled>
+                    </div>
+                </div>
+                
+                <!-- 学生人数信息 -->
+                <div class="student-category">
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label>全日制学生总数(人)</label>
+                            <input type="text" id="fullTimeTotal" readonly class="form-control calculated-field" style="background: #f5f5f5; border: 1px solid #ddd;">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label for="fullTimeSpecialist">专科全日制学生数(人)</label>
+                            <input type="number" id="fullTimeSpecialist" name="fullTimeSpecialist" value="0" class="form-control student-number-input" oninput="calculateTotalStudents(); validateStudentInput(this);" style="background: white; border: 1px solid #ddd;">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label for="fullTimeUndergraduate">本科全日制学生数(人)</label>
+                            <input type="number" id="fullTimeUndergraduate" name="fullTimeUndergraduate" value="0" class="form-control student-number-input" oninput="calculateTotalStudents(); validateStudentInput(this);" style="background: white; border: 1px solid #ddd;">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label for="fullTimeMaster">硕士全日制学生数(人)</label>
+                            <input type="number" id="fullTimeMaster" name="fullTimeMaster" value="0" class="form-control student-number-input" oninput="calculateTotalStudents(); validateStudentInput(this);" style="background: white; border: 1px solid #ddd;">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label for="fullTimeDoctor">博士全日制学生数(人)</label>
+                            <input type="number" id="fullTimeDoctor" name="fullTimeDoctor" value="0" class="form-control student-number-input" oninput="calculateTotalStudents(); validateStudentInput(this);" style="background: white; border: 1px solid #ddd; font-weight: normal; text-align: left;">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label>学历留学生总数(人)</label>
+                            <input type="text" id="internationalTotal" readonly class="form-control calculated-field" style="background: #f5f5f5; border: 1px solid #ddd;">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label for="internationalUndergraduate">学历本科留学生数(人)</label>
+                            <input type="number" id="internationalUndergraduate" name="internationalUndergraduate" value="0" class="form-control student-number-input" oninput="calculateTotalStudents(); validateStudentInput(this);" style="background: white; border: 1px solid #ddd;">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label for="internationalMaster">学历硕士留学生数(人)</label>
+                            <input type="number" id="internationalMaster" name="internationalMaster" value="0" class="form-control student-number-input" oninput="calculateTotalStudents(); validateStudentInput(this);" style="background: white; border: 1px solid #ddd;">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label for="internationalDoctor">学历博士留学生数(人)</label>
+                            <input type="number" id="internationalDoctor" name="internationalDoctor" value="0" class="form-control student-number-input" oninput="calculateTotalStudents(); validateStudentInput(this);" style="background: white; border: 1px solid #ddd; font-weight: normal; text-align: left;">
+                        </div>
+                        <div style="flex: 1; margin-bottom: 0;"></div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>学生总人数(人)</label>
+                        <input type="text" id="totalStudents" readonly class="form-control calculated-field" style="background: #f5f5f5; border: 1px solid #ddd; font-weight: bold;">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>更新时间</label>
+                        <input type="text" id="updateTime" readonly class="form-control calculated-field" style="background: #f5f5f5; border: 1px solid #ddd;">
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <button type="button" class="btn btn-primary" onclick="saveStudentData()" 
+                            style="background: white; color: #3498db; border: 2px solid #3498db;">
+                        保存
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeSidePanel()" 
+                            style="background: white; color: #333; border: 2px solid #333;">
+                        取消
+                    </button>
+                </div>
+            `;
+            
+            // 设置当前日期
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const currentDate = `${year}-${month}-${day}`;
+            
+            // 使用setTimeout确保DOM已经渲染
+            setTimeout(() => {
+                const updateTimeField = document.getElementById('updateTime');
+                if (updateTimeField) {
+                    updateTimeField.value = currentDate;
+                }
+            }, 0);
+        }
+        
+        /**
+         * 计算学生总数
+         */
+        function calculateTotalStudents() {
+            // 获取全日制学生数
+            const fullTimeSpecialist = parseInt(document.getElementById('fullTimeSpecialist')?.value) || 0;
+            const fullTimeUndergraduate = parseInt(document.getElementById('fullTimeUndergraduate')?.value) || 0;
+            const fullTimeMaster = parseInt(document.getElementById('fullTimeMaster')?.value) || 0;
+            const fullTimeDoctor = parseInt(document.getElementById('fullTimeDoctor')?.value) || 0;
+            
+            // 计算全日制学生总数
+            const fullTimeTotal = fullTimeSpecialist + fullTimeUndergraduate + fullTimeMaster + fullTimeDoctor;
+            const fullTimeTotalField = document.getElementById('fullTimeTotal');
+            if (fullTimeTotalField) {
+                fullTimeTotalField.value = fullTimeTotal;
+            }
+            
+            // 获取留学生数
+            const internationalUndergraduate = parseInt(document.getElementById('internationalUndergraduate')?.value) || 0;
+            const internationalMaster = parseInt(document.getElementById('internationalMaster')?.value) || 0;
+            const internationalDoctor = parseInt(document.getElementById('internationalDoctor')?.value) || 0;
+            
+            // 计算留学生总数
+            const internationalTotal = internationalUndergraduate + internationalMaster + internationalDoctor;
+            const internationalTotalField = document.getElementById('internationalTotal');
+            if (internationalTotalField) {
+                internationalTotalField.value = internationalTotal;
+            }
+            
+            // 计算学生总人数
+            const totalStudents = fullTimeTotal + internationalTotal;
+            const totalStudentsField = document.getElementById('totalStudents');
+            if (totalStudentsField) {
+                totalStudentsField.value = totalStudents;
+            }
+        }
+        
+        /**
+         * 验证学生数输入
+         */
+        function validateStudentInput(input) {
+            if (input.value < 0) {
+                input.value = 0;
+            }
+            // 确保输入为整数
+            if (input.value && !Number.isInteger(parseFloat(input.value))) {
+                input.value = Math.floor(parseFloat(input.value));
+            }
+        }
+        
+        /**
+         * 处理测算口径选择变化
+         */
+        function handleCalculationCriteriaChange() {
+            const criteriaSelect = document.getElementById('panelCalculationCriteria');
+            const customInput = document.getElementById('panelCustomCriteria');
+            
+            if (!criteriaSelect || !customInput) {
+                return;
+            }
+            
+            const selectedValue = criteriaSelect.value;
+            
+            if (selectedValue === '其他') {
+                // 选择了"其他"，启用自定义输入框
+                customInput.disabled = false;
+                customInput.readOnly = false;
+                customInput.style.backgroundColor = 'white';
+                customInput.style.cursor = 'text';
+                customInput.value = '';
+                customInput.focus();
+            } else {
+                // 选择了预定义选项，禁用自定义输入框
+                customInput.disabled = true;
+                customInput.readOnly = true;
+                customInput.style.backgroundColor = '#e9ecef';
+                customInput.style.cursor = 'not-allowed';
+                customInput.value = '';
+            }
+        }
+        
+        /**
+         * 打开侧边面板
+         */
+        function openSidePanel() {
+            const sidePanel = document.getElementById('sidePanel');
+            sidePanel.classList.add('active');
+            // 禁止背景滚动
+            document.body.style.overflow = 'hidden';
+        }
+        
+        /**
+         * 关闭侧边面板
+         */
+        function closeSidePanel() {
+            const sidePanel = document.getElementById('sidePanel');
+            sidePanel.classList.remove('active');
+            // 恢复背景滚动
+            document.body.style.overflow = '';
+            // 清空内容
+            document.getElementById('sidePanelBody').innerHTML = '';
+        }
+        
+        /**
+         * 保存学生数据
+         */
+        async function saveStudentData() {
+            // 检查是否为编辑模式
+            const editRecordId = document.getElementById('editRecordId')?.value;
+            const isEditMode = !!editRecordId;
+            
+            const schoolName = document.getElementById('panelSchoolName').value;
+            const plannedYear = document.getElementById('panelPlannedYear').value;
+            const calculationCriteria = document.getElementById('panelCalculationCriteria').value;
+            const customCriteria = document.getElementById('panelCustomCriteria').value;
+            
+            // 验证必填字段
+            if (!schoolName) {
+                alert('请选择单位/学校');
+                return;
+            }
+            
+            if (!plannedYear) {
+                alert('请选择规划年度');
+                return;
+            }
+            
+            if (!calculationCriteria) {
+                alert('请选择测算口径');
+                return;
+            }
+            
+            // 如果选择了"其他"，必须填写自定义测算口径
+            if (calculationCriteria === '其他' && !customCriteria.trim()) {
+                alert('请填写具体测算口径');
+                document.getElementById('panelCustomCriteria').focus();
+                return;
+            }
+            
+            // 确定最终的测算口径值
+            const finalCalculationCriteria = calculationCriteria === '其他' 
+                ? customCriteria.trim() 
+                : calculationCriteria;
+            
+            // 获取学生数据
+            const fullTimeSpecialist = parseInt(document.getElementById('fullTimeSpecialist')?.value) || 0;
+            const fullTimeUndergraduate = parseInt(document.getElementById('fullTimeUndergraduate')?.value) || 0;
+            const fullTimeMaster = parseInt(document.getElementById('fullTimeMaster')?.value) || 0;
+            const fullTimeDoctor = parseInt(document.getElementById('fullTimeDoctor')?.value) || 0;
+            const fullTimeTotal = parseInt(document.getElementById('fullTimeTotal')?.value) || 0;
+            
+            const internationalUndergraduate = parseInt(document.getElementById('internationalUndergraduate')?.value) || 0;
+            const internationalMaster = parseInt(document.getElementById('internationalMaster')?.value) || 0;
+            const internationalDoctor = parseInt(document.getElementById('internationalDoctor')?.value) || 0;
+            const internationalTotal = parseInt(document.getElementById('internationalTotal')?.value) || 0;
+            
+            const totalStudents = parseInt(document.getElementById('totalStudents')?.value) || 0;
+            
+            const data = {
+                schoolName,
+                year: plannedYear,
+                calculationCriteria: finalCalculationCriteria,
+                fullTimeSpecialist,
+                fullTimeUndergraduate,
+                fullTimeMaster,
+                fullTimeDoctor,
+                internationalUndergraduate,
+                internationalMaster,
+                internationalDoctor
+            };
+            
+            console.log(isEditMode ? '更新学生数据:' : '新增学生数据:', data);
+            
+            // 调用API保存数据
+            try {
+                const response = await fetch('/api/planned-students', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(isEditMode ? '更新成功' : '保存成功');
+                    closeSidePanel();
+                    // 重新加载当前用户的所有数据
+                    loadStudentDataByFilter('all', 'all');
+                } else {
+                    throw new Error(result.error || '保存失败');
+                }
+            } catch (error) {
+                console.error('保存失败:', error);
+                alert('保存失败: ' + error.message);
+                return;
+            }
+        }
+        
+        
+        // ========================================
+        // 年份九宫格功能
+        // ========================================
+        
+        let currentYearGridBase = 2025; // 当前九宫格的基础年份
+        
+        /**
+         * 初始化年份九宫格
+         */
+        function initYearGrid() {
+            const currentYear = new Date().getFullYear();
+            currentYearGridBase = currentYear;
+            updateYearGrid();
+            
+            // 点击overlay外部关闭九宫格
+            document.getElementById('yearGridOverlay').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    hideYearGrid();
+                }
+            });
+        }
+        
+        /**
+         * 显示年份九宫格
+         */
+        function showYearGrid() {
+            document.getElementById('yearGridOverlay').style.display = 'flex';
+            updateYearGrid();
+        }
+        
+        /**
+         * 隐藏年份九宫格
+         */
+        function hideYearGrid() {
+            document.getElementById('yearGridOverlay').style.display = 'none';
+        }
+        
+        /**
+         * 移动年份九宫格
+         * @param {number} direction 方向：-1向前，1向后
+         */
+        function moveYearGrid(direction) {
+            currentYearGridBase += direction * 9;
+            updateYearGrid();
+        }
+        
+        /**
+         * 更新年份九宫格显示
+         */
+        function updateYearGrid() {
+            const yearGrid = document.getElementById('yearGrid');
+            const yearRangeText = document.getElementById('yearRangeText');
+            
+            // 清空现有内容
+            yearGrid.innerHTML = '';
+            
+            // 生成9个年份按钮
+            for (let i = 0; i < 9; i++) {
+                const year = currentYearGridBase + i;
+                const yearBtn = document.createElement('button');
+                yearBtn.type = 'button';
+                yearBtn.className = 'year-item';
+                yearBtn.textContent = year;
+                yearBtn.onclick = function() {
+                    selectYear(year);
+                };
+                
+                // 高亮当前选中的年份
+                const selectedYear = document.getElementById('plannedYearFilter').value;
+                if (year == selectedYear) {
+                    yearBtn.classList.add('selected');
+                }
+                
+                yearGrid.appendChild(yearBtn);
+            }
+            
+            // 更新年份范围显示
+            yearRangeText.textContent = `${currentYearGridBase} - ${currentYearGridBase + 8}`;
+        }
+        
+        /**
+         * 选择年份
+         * @param {number} year 选中的年份
+         */
+        function selectYear(year) {
+            document.getElementById('plannedYearFilter').value = year;
+            hideYearGrid();
+            console.log('选择规划年份:', year);
+        }
+        
+        /**
+         * 为侧边面板显示年份九宫格
+         */
+        function showYearGridForPanel() {
+            // 显示年份九宫格
+            showYearGrid();
+            
+            // 更新九宫格,高亮当前侧边面板选中的年份
+            const panelYearInput = document.getElementById('panelPlannedYear');
+            const selectedYear = panelYearInput ? panelYearInput.value : '';
+            
+            const yearGrid = document.getElementById('yearGrid');
+            const buttons = yearGrid.querySelectorAll('.year-item');
+            buttons.forEach(btn => {
+                btn.classList.remove('selected');
+                if (btn.textContent == selectedYear) {
+                    btn.classList.add('selected');
+                }
+                
+                // 修改点击事件,选择后填充到侧边面板的输入框
+                btn.onclick = function() {
+                    const year = btn.textContent;
+                    if (panelYearInput) {
+                        panelYearInput.value = year;
+                    }
+                    hideYearGrid();
+                    console.log('侧边面板选择规划年份:', year);
+                };
+            });
+        }
+        
+        /**
+         * 查找学生数据
+         */
+        function searchStudentData() {
+            const schoolName = document.getElementById('schoolName').value;
+            const plannedYear = document.getElementById('plannedYearFilter').value;
+            
+            if (!schoolName) {
+                alert('请选择学校');
+                return;
+            }
+            
+            if (!plannedYear) {
+                alert('请选择规划年份');
+                return;
+            }
+            
+            console.log('查找学生数据:', { schoolName, plannedYear });
+            
+            // 调用加载数据函数
+            loadStudentDataByFilter(schoolName, plannedYear);
+        }
+        
+        /**
+         * 根据筛选条件加载学生数据
+         */
+        async function loadStudentDataByFilter(schoolName, plannedYear) {
+            try {
+                console.log('正在加载学生数据...', { schoolName, plannedYear });
+                
+                // 构建查询参数
+                const params = new URLSearchParams();
+                if (schoolName && schoolName !== 'all') {
+                    params.append('schoolName', schoolName);
+                }
+                if (plannedYear && plannedYear !== 'all') {
+                    params.append('year', plannedYear);
+                }
+                
+                // 调用API获取数据
+                const response = await fetch(`/api/planned-students?${params.toString()}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('获取数据失败');
+                }
+                
+                const result = await response.json();
+                console.log('===== API 原始返回 =====');
+                console.log('完整响应:', result);
+                console.log('数据条数:', result.data?.length);
+                
+                if (result.success) {
+                    console.log('加载到的数据:', result.data);
+                    console.log('第一条记录的完整数据:', JSON.stringify(result.data[0], null, 2));
+                    if (result.data[0]) {
+                        console.log('第一条记录的创建者字段:', {
+                            creator_name: result.data[0].creator_name,
+                            creator_username: result.data[0].creator_username,
+                            submitter_username: result.data[0].submitter_username
+                        });
+                    }
+                    renderStudentDataTable(result.data);
+                } else {
+                    throw new Error(result.error || '获取数据失败');
+                }
+                
+            } catch (error) {
+                console.error('加载学生数据失败:', error);
+                alert('加载学生数据失败: ' + error.message);
+            }
+        }
+        
+        /**
+         * 渲染规划学生数表格
+         */
+        function renderStudentDataTable(dataList) {
+            console.log('开始渲染表格, 数据条数:', dataList?.length);
+            
+            const tableBody = document.getElementById('studentDataTableBody');
+            const tableWrapper = document.querySelector('.student-planning-table-wrapper');
+            
+            if (!tableBody || !tableWrapper) {
+                console.error('表格元素未找到');
+                return;
+            }
+            
+            // 清空表格
+            tableBody.innerHTML = '';
+            
+            if (!dataList || dataList.length === 0) {
+                console.log('没有数据');
+                return;
+            }
+            
+            console.log('准备渲染数据');
+            
+            // 渲染每一行数据
+            dataList.forEach((record, index) => {
+                console.log(`渲染第${index + 1}行:`, record.school_name, record.year);
+                console.log('创建者数据:', {
+                    submitter_real_name: record.submitter_real_name,
+                    creator_name: record.creator_name,
+                    creator_username: record.creator_username,
+                    submitter_username: record.submitter_username
+                });
+                
+                const row = document.createElement('tr');
+                const updatedAt = record.updated_at ? new Date(record.updated_at).toLocaleString('zh-CN') : '';
+                // 优先显示真实姓名
+                const creatorName = record.submitter_real_name || record.creator_name || record.creator_username || record.submitter_username || '未知';
+                
+                console.log('最终显示的创建者:', creatorName);
+                
+                row.innerHTML = `
+                    <td>${record.school_name || ''}</td>
+                    <td>${record.year || ''}</td>
+                    <td>${record.calculation_criteria || ''}</td>
+                    <td>${record.student_grand_total || 0}</td>
+                    <td>${record.full_time_total || 0}</td>
+                    <td>${record.international_total || 0}</td>
+                    <td>${updatedAt}</td>
+                    <td>${creatorName}</td>
+                    <td style="white-space: normal;">
+                        <button onclick="editStudentData(${record.id})" style="background: none; border: none; color: #3498db; cursor: pointer; padding: 0; margin-right: 10px; text-decoration: underline;">编辑</button>
+                        <button onclick="deleteStudentData(${record.id})" style="background: none; border: none; color: #e74c3c; cursor: pointer; padding: 0; text-decoration: underline;">删除</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            console.log('表格渲染完成, 行数:', tableBody.children.length);
+        }
+        
+        /**
+         * 编辑学生数据
+         */
+        /**
+         * 编辑学生数据
+         */
+        async function editStudentData(id) {
+            console.log('编辑学生数据，ID:', id);
+            
+            try {
+                // 获取所有数据（不带任何过滤条件，这样会返回当前用户的所有记录）
+                const response = await fetch(`/api/planned-students`, {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('获取数据失败');
+                }
+                
+                const result = await response.json();
+                
+                console.log('API返回结果:', result);
+                
+                if (!result.success || !result.data) {
+                    throw new Error('数据格式错误');
+                }
+                
+                console.log('查找ID:', id, '数据条数:', result.data.length);
+                
+                // 找到对应ID的记录（确保ID类型匹配）
+                const record = result.data.find(item => item.id == id);
+                
+                if (!record) {
+                    console.error('未找到记录，所有记录:', result.data.map(r => ({ id: r.id, school: r.school_name })));
+                    throw new Error('未找到该记录');
+                }
+                
+                console.log('找到记录:', record);
+                
+                // 复用新增功能的面板，但填充现有数据
+                await openEditPanel(record);
+                
+            } catch (error) {
+                console.error('加载编辑数据失败:', error);
+                alert('加载编辑数据失败: ' + error.message);
+            }
+        }
+        
+        /**
+         * 打开编辑面板
+         */
+        async function openEditPanel(record) {
+            // 获取当前用户信息
+            const user = AuthManager.getCurrentUser();
+            const userName = user ? (user.real_name || user.username) : '未知用户';
+            const userRole = user ? user.role : '';
+            const userSchool = user ? user.school_name : '';
+            
+            // 打开侧边面板
+            openSidePanel();
+            
+            // 获取侧边面板内容区域
+            const panelBody = document.getElementById('sidePanelBody');
+            
+            // 获取学校列表
+            let schoolOptions = '<option value="">请选择学校</option>';
+            try {
+                const response = await fetch('/api/schools/registry', {
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success && result.data) {
+                        result.data.forEach(school => {
+                            const selected = school.school_name === record.school_name ? 'selected' : '';
+                            schoolOptions += `<option value="${school.school_name}" ${selected}>${school.school_name}</option>`;
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('获取学校列表失败:', error);
+            }
+            
+            // 判断学校字段是否禁用（编辑模式下学校和年份不可修改）
+            const schoolDisabled = 'disabled';
+            const yearDisabled = 'disabled';
+            
+            // 获取数据来源列表
+            let dataSourceOptions = '';
+            try {
+                const dsResponse = await fetch('/api/student-data-sources', {
+                    credentials: 'include'
+                });
+                if (dsResponse.ok) {
+                    const dsResult = await dsResponse.json();
+                    if (dsResult.success && dsResult.data) {
+                        dsResult.data.forEach(source => {
+                            const selected = source.data_source === record.calculation_criteria ? 'selected' : '';
+                            dataSourceOptions += `<option value="${source.data_source}" ${selected}>${source.data_source}</option>`;
+                        });
+                        // 添加"其他"选项
+                        const otherSelected = !dsResult.data.find(s => s.data_source === record.calculation_criteria) ? 'selected' : '';
+                        dataSourceOptions += `<option value="其他" ${otherSelected}>其他</option>`;
+                    }
+                }
+            } catch (error) {
+                console.error('获取数据来源列表失败:', error);
+            }
+            
+            // 创建表单内容（编辑模式）
+            panelBody.innerHTML = `
+                <input type="hidden" id="editRecordId" value="${record.id}">
+                <div class="form-group">
+                    <label>创建者</label>
+                    <input type="text" class="form-control" value="${record.submitter_real_name || record.submitter_username || '未知'}" readonly 
+                           style="background-color: #e9ecef; cursor: not-allowed;">
+                </div>
+                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label for="panelSchoolName">单位/学校(机构)名称(章) *</label>
+                        <select id="panelSchoolName" name="panelSchoolName" class="form-control" ${schoolDisabled}
+                                style="background-color: #e9ecef; cursor: not-allowed;">
+                            ${schoolOptions}
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label for="panelPlannedYear">规划年度 *</label>
+                        <input type="text" id="panelPlannedYear" name="panelPlannedYear" 
+                               class="form-control" value="${record.year}" readonly
+                               style="cursor: not-allowed; background-color: #e9ecef;">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label for="panelCalculationCriteria">测算口径 *</label>
+                        <select id="panelCalculationCriteria" name="panelCalculationCriteria" 
+                                class="form-control" onchange="handleCalculationCriteriaChange()">
+                            <option value="">请选择测算口径</option>
+                            ${dataSourceOptions}
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label style="color: transparent; user-select: none;">占位</label>
+                        <input type="text" id="panelCustomCriteria" name="panelCustomCriteria" 
+                               class="form-control" placeholder="请填写具体测算口径"
+                               value="${record.calculation_criteria || ''}"
+                               style="background-color: #e9ecef; cursor: not-allowed;" 
+                               readonly disabled>
+                    </div>
+                </div>
+                
+                <!-- 学生人数信息 -->
+                <div class="student-category">
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label>全日制学生总数(人)</label>
+                            <input type="text" id="fullTimeTotal" readonly class="form-control calculated-field" 
+                                   value="${record.full_time_total || 0}"
+                                   style="background: #f5f5f5; border: 1px solid #ddd;">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label for="fullTimeSpecialist">专科全日制学生数(人)</label>
+                            <input type="number" id="fullTimeSpecialist" name="fullTimeSpecialist" 
+                                   value="${record.full_time_specialist || 0}" 
+                                   class="form-control student-number-input" 
+                                   oninput="calculateTotalStudents(); validateStudentInput(this);" 
+                                   style="background: white; border: 1px solid #ddd;">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label for="fullTimeUndergraduate">本科全日制学生数(人)</label>
+                            <input type="number" id="fullTimeUndergraduate" name="fullTimeUndergraduate" 
+                                   value="${record.full_time_undergraduate || 0}" 
+                                   class="form-control student-number-input" 
+                                   oninput="calculateTotalStudents(); validateStudentInput(this);" 
+                                   style="background: white; border: 1px solid #ddd;">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label for="fullTimeMaster">硕士全日制学生数(人)</label>
+                            <input type="number" id="fullTimeMaster" name="fullTimeMaster" 
+                                   value="${record.full_time_master || 0}" 
+                                   class="form-control student-number-input" 
+                                   oninput="calculateTotalStudents(); validateStudentInput(this);" 
+                                   style="background: white; border: 1px solid #ddd;">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label for="fullTimeDoctor">博士全日制学生数(人)</label>
+                            <input type="number" id="fullTimeDoctor" name="fullTimeDoctor" 
+                                   value="${record.full_time_doctor || 0}" 
+                                   class="form-control student-number-input" 
+                                   oninput="calculateTotalStudents(); validateStudentInput(this);" 
+                                   style="background: white; border: 1px solid #ddd; font-weight: normal; text-align: left;">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label>学历留学生总数(人)</label>
+                            <input type="text" id="internationalTotal" readonly class="form-control calculated-field" 
+                                   value="${record.international_total || 0}"
+                                   style="background: #f5f5f5; border: 1px solid #ddd;">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label for="internationalUndergraduate">学历本科留学生数(人)</label>
+                            <input type="number" id="internationalUndergraduate" name="internationalUndergraduate" 
+                                   value="${record.international_undergraduate || 0}" 
+                                   class="form-control student-number-input" 
+                                   oninput="calculateTotalStudents(); validateStudentInput(this);" 
+                                   style="background: white; border: 1px solid #ddd;">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label for="internationalMaster">学历硕士留学生数(人)</label>
+                            <input type="number" id="internationalMaster" name="internationalMaster" 
+                                   value="${record.international_master || 0}" 
+                                   class="form-control student-number-input" 
+                                   oninput="calculateTotalStudents(); validateStudentInput(this);" 
+                                   style="background: white; border: 1px solid #ddd;">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label for="internationalDoctor">学历博士留学生数(人)</label>
+                            <input type="number" id="internationalDoctor" name="internationalDoctor" 
+                                   value="${record.international_doctor || 0}" 
+                                   class="form-control student-number-input" 
+                                   oninput="calculateTotalStudents(); validateStudentInput(this);" 
+                                   style="background: white; border: 1px solid #ddd; font-weight: normal; text-align: left;">
+                        </div>
+                        <div style="flex: 1; margin-bottom: 0;"></div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>学生总人数(人)</label>
+                        <input type="text" id="totalStudents" readonly class="form-control calculated-field" 
+                               value="${record.student_grand_total || 0}"
+                               style="background: #f5f5f5; border: 1px solid #ddd; font-weight: bold;">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>更新时间</label>
+                        <input type="text" id="updateTime" readonly class="form-control calculated-field" 
+                               value="${record.updated_at ? new Date(record.updated_at).toLocaleDateString('zh-CN') : ''}"
+                               style="background: #f5f5f5; border: 1px solid #ddd;">
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <button type="button" class="btn btn-primary" onclick="saveStudentData()" 
+                            style="background: white; color: #3498db; border: 2px solid #3498db;">
+                        保存
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeSidePanel()" 
+                            style="background: white; color: #333; border: 2px solid #333;">
+                        取消
+                    </button>
+                </div>
+            `;
+        }
+        
+        /**
+         * 删除学生数据
+         */
+        async function deleteStudentData(id) {
+            if (!confirm('确定要删除这条规划学生数记录吗？')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/planned-students/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('删除成功');
+                    // 重新加载当前用户的所有数据
+                    loadStudentDataByFilter('all', 'all');
+                } else {
+                    throw new Error(result.error || '删除失败');
+                }
+            } catch (error) {
+                console.error('删除失败:', error);
+                alert('删除失败: ' + error.message);
+            }
+        }
+        
+        /**
+         * 初始化冻结表格滚动同步
+         */
+    </script>
+</body>
+</html>

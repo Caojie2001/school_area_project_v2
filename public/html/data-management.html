@@ -6,6 +6,87 @@
     <title>历史测算 - 高校建筑面积缺口计算器</title>
     <!-- 引入模块化CSS样式 -->
     <link rel="stylesheet" href="../css/main.css">
+    <style>
+        /* 多选下拉框样式 */
+        .custom-multi-select {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .custom-multi-select .select-display {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            background: white;
+            min-height: 38px;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .custom-multi-select .select-display:hover {
+            border-color: #999;
+        }
+
+        .custom-multi-select .display-text {
+            color: #333;
+            font-size: 14px;
+        }
+
+        .custom-multi-select .selected-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #e3f2fd;
+            color: #1976d2;
+            border-radius: 3px;
+            font-size: 12px;
+            margin: 2px;
+        }
+
+        .custom-multi-select .dropdown-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            margin-top: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .custom-multi-select .dropdown-list.show {
+            display: block;
+        }
+
+        .custom-multi-select .option-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .custom-multi-select .option-item:hover {
+            background: #f5f5f5;
+        }
+
+        .custom-multi-select .option-item input[type="checkbox"] {
+            cursor: pointer;
+        }
+
+        .custom-multi-select .option-item span {
+            cursor: pointer;
+            user-select: none;
+        }
+    </style>
 </head>
 <body>
     <div class="app-container">
@@ -34,9 +115,14 @@
                                 <span id="schoolFilterLockHint" style="display: none; position: absolute; right: 5px; top: 50%; transform: translateY(-50%); color: #6c757d; font-size: 12px; pointer-events: none;">🔒 已锁定</span>
                             </div>
                             <div style="position: relative; display: inline-block; width: 15%; min-width: 100px;">
-                                <select id="dataUserFilter" class="search-input" style="width: 100%;">
-                                    <option value="all">所有测算用户</option>
-                                </select>
+                                <div class="custom-multi-select" id="dataUserFilter">
+                                    <div class="select-display" onclick="toggleUserDropdown()">
+                                        <span class="display-text">请选择测算用户</span>
+                                    </div>
+                                    <div class="dropdown-list" id="userDropdownList">
+                                        <!-- 用户选项将通过JavaScript动态加载 -->
+                                    </div>
+                                </div>
                                 <span id="userFilterLockHint" style="display: none; position: absolute; right: 5px; top: 50%; transform: translateY(-50%); color: #6c757d; font-size: 12px; pointer-events: none;">🔒 已锁定</span>
                             </div>
 
@@ -172,6 +258,62 @@
 
         // 全局暴露函数，覆盖main.js中的版本
         window.showPage = showPage;
+
+        // 多选下拉框相关函数
+        function toggleUserDropdown() {
+            const dropdown = document.getElementById('userDropdownList');
+            if (dropdown) {
+                dropdown.classList.toggle('show');
+            }
+        }
+
+        function toggleUserOption(element) {
+            const checkbox = element.querySelector('input[type="checkbox"]');
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+                updateUserDisplay();
+            }
+        }
+
+        function updateUserDisplay() {
+            const display = document.querySelector('#dataUserFilter .select-display');
+            const checkboxes = document.querySelectorAll('#userDropdownList input[type="checkbox"]');
+            const selectedUsers = Array.from(checkboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+
+            // 清空显示区域
+            display.innerHTML = '';
+
+            if (selectedUsers.length === 0) {
+                // 未选择任何用户
+                display.innerHTML = '<span class="display-text">请选择测算用户</span>';
+            } else if (selectedUsers.length === 1) {
+                // 只选择了一个用户，显示用户名（优先于"所有"判断）
+                display.innerHTML = '<span class="display-text">' + selectedUsers[0] + '</span>';
+            } else if (selectedUsers.length === checkboxes.length) {
+                // 选择了全部用户
+                display.innerHTML = '<span class="display-text">所有测算用户</span>';
+            } else {
+                // 选择了部分用户
+                display.innerHTML = '<span class="display-text">部分测算用户</span>';
+            }
+        }
+
+        // 点击外部关闭下拉框
+        document.addEventListener('click', function(e) {
+            const multiSelect = document.getElementById('dataUserFilter');
+            const dropdown = document.getElementById('userDropdownList');
+            
+            if (multiSelect && dropdown && !multiSelect.contains(e.target)) {
+                dropdown.classList.remove('show');
+            }
+        });
+
+        // 全局暴露多选框相关函数
+        window.toggleUserDropdown = toggleUserDropdown;
+        window.toggleUserOption = toggleUserOption;
+        window.updateUserDisplay = updateUserDisplay;
     </script>
 </body>
 </html>

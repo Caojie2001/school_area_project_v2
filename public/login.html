@@ -285,7 +285,10 @@
                     if (result.success) {
                         showMessage('登录成功，正在跳转...', 'success');
                         setTimeout(() => {
-                            window.location.href = '/';
+                            // 获取URL参数中的重定向地址
+                            const urlParams = new URLSearchParams(window.location.search);
+                            const redirectUrl = urlParams.get('redirect') || '/html/data-entry-new.html';
+                            window.location.href = redirectUrl;
                         }, 1000);
                     } else {
                         showMessage(result.message || '登录失败', 'error');
@@ -318,8 +321,10 @@
                     const result = await response.json();
                     
                     if (result.success && result.isLoggedIn) {
-                        // 已经登录，跳转到主页
-                        window.location.href = '/';
+                        // 已经登录，跳转到原目标页面或新版高校测算页面
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const redirectUrl = urlParams.get('redirect') || '/html/data-entry-new.html';
+                        window.location.href = redirectUrl;
                     }
                 } catch (error) {
                     // 忽略错误，继续显示登录页面

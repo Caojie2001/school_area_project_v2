@@ -5,15 +5,19 @@
     </div>
     
     <div class="sidebar-menu">
-        <a class="menu-item" onclick="showPage('data-entry')" id="menu-data-entry">
+        <!-- 建筑面积管理菜单项 -->
+        <a class="menu-item" href="/html/area-management.html" id="menu-area-management">
+            建筑面积管理
+        </a>
+        <!-- 规划学生数管理菜单项 -->
+        <a class="menu-item" href="/html/student-planning.html" id="menu-student-planning">
+            规划学生数管理
+        </a>
+        <a class="menu-item" href="/html/data-entry-new.html" id="menu-data-entry-new">
             高校测算
         </a>
-        <a class="menu-item" onclick="showPage('data-management')" id="menu-data-management">
+        <a class="menu-item" href="/index.html#data-management" data-page="data-management" id="menu-data-management">
             历史测算
-        </a>
-        <!-- 测算数据统计菜单项（仅基建中心和管理员可见） -->
-        <a class="menu-item menu-restricted" onclick="showPage('statistics')" id="menu-statistics">
-            测算统计
         </a>
         <!-- 测算标准管理菜单项（仅管理员可见） -->
         <a class="menu-item menu-restricted" href="/html/calculation-standards.html" id="menu-calculation-standards">
@@ -25,3 +29,43 @@
         </a>
     </div>
 </nav>
+
+<script>
+// 智能导航处理
+(function() {
+    // 检查是否在 index.html (SPA 模式)
+    const isIndexPage = window.location.pathname === '/' || window.location.pathname.includes('index.html');
+    
+    if (isIndexPage) {
+        // 等待 showPage 函数加载
+        const initSPANavigation = function() {
+            if (typeof showPage === 'function') {
+                // 在 SPA 页面中，拦截带 data-page 属性的链接点击
+                document.querySelectorAll('.menu-item[data-page]').forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const pageId = this.getAttribute('data-page');
+                        showPage(pageId);
+                        
+                        // 更新活动状态
+                        document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+                        this.classList.add('active');
+                    });
+                });
+                console.log('✅ SPA 导航已初始化');
+            } else {
+                // showPage 还未加载，稍后重试
+                console.log('⏳ 等待 showPage 函数加载...');
+                setTimeout(initSPANavigation, 100);
+            }
+        };
+        
+        // 延迟执行以确保 main.js 已加载
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initSPANavigation);
+        } else {
+            initSPANavigation();
+        }
+    }
+})();
+</script>

@@ -1,0 +1,1783 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>建筑面积管理 - 高校建筑面积缺口计算器</title>
+    <!-- 引入模块化CSS样式 -->
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边栏容器 -->
+        <div id="sidebarContainer"></div>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <div class="page-content active">
+                <!-- 页面头部容器 -->
+                <div id="pageHeaderContainer"></div>
+                
+                <!-- 页面内容容器 -->
+                <div class="content-body" id="pageContentContainer">
+                    <!-- 建筑面积管理表单 -->
+                    <div class="online-form-section" id="areaManagementSection">
+                        <div class="form-container">
+                            <!-- 学校选择行 -->
+                            <div class="form-row" style="margin-bottom: 0;">
+                                <div class="form-group form-group-school-name">
+                                    <label for="schoolName">学校名称 *</label>
+                                    <select id="schoolName" name="schoolName" required class="form-control" onchange="handleSchoolChange()">
+                                        <option value="">请选择学校</option>
+                                    </select>
+                                    <small class="school-type-display" id="schoolTypeDisplay"></small>
+                                </div>
+                            </div>
+                            
+                            <!-- 1. 现状面积模块 -->
+                            <div class="card" id="currentAreaSection">
+                                <h3>1. 现状面积</h3>
+                                <div class="form-row" style="margin-bottom: 0;">
+                                    <div class="form-group">
+                                        <label for="dataSource">数据来源_建筑面积(㎡)_现状 *</label>
+                                        <select id="dataSource" name="dataSource" required class="form-control" onchange="handleDataSourceChange()" disabled>
+                                            <option value="">请先选择学校</option>
+                                        </select>
+                                        <small class="school-type-display" id="dataSourceHint" style="display: none;">选择要查看或编辑的数据来源</small>
+                                    </div>
+                                </div>
+                                
+                                <!-- 数据来源的数据显示 -->
+                                <div id="dataSourceDataSection" class="card" style="margin-top: 0px; padding: 15px; background-color: #f8f9fa;">
+                                    <h4 style="margin-top: 0px; margin-bottom: 15px; color: #495057;">数据来源的数据：</h4>
+                                    
+                                    <!-- 第一行：教学、办公、后勤 -->
+                                    <div class="form-row" style="margin-bottom: 10px;">
+                                        <div class="form-group">
+                                            <label for="teachingAreaCurrent">教学及辅助用房面积(㎡)_现状_数据来源</label>
+                                            <input type="number" id="teachingAreaCurrent" name="teachingAreaCurrent" 
+                                                   class="form-control" value="0.00" step="0.01" readonly 
+                                                   style="background-color: #e9ecef; cursor: not-allowed;">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="officeAreaCurrent">办公用房面积(㎡)_现状_数据来源</label>
+                                            <input type="number" id="officeAreaCurrent" name="officeAreaCurrent" 
+                                                   class="form-control" value="0.00" step="0.01" readonly 
+                                                   style="background-color: #e9ecef; cursor: not-allowed;">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="logisticsAreaCurrent">后勤辅助用房面积(㎡)_现状_数据来源</label>
+                                            <input type="number" id="logisticsAreaCurrent" name="logisticsAreaCurrent" 
+                                                   class="form-control" value="0.00" step="0.01" readonly 
+                                                   style="background-color: #e9ecef; cursor: not-allowed;">
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 第二行：生活用房总面积、学生宿舍、其他生活用房 -->
+                                    <div class="form-row" style="margin-bottom: 10px;">
+                                        <div class="form-group">
+                                            <label for="totalLivingAreaCurrent">生活用房总面积(㎡)_现状_数据来源</label>
+                                            <input type="number" id="totalLivingAreaCurrent" name="totalLivingAreaCurrent" 
+                                                   class="form-control" value="0.00" step="0.01" readonly 
+                                                   style="background-color: #e9ecef; cursor: not-allowed;">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="dormitoryAreaCurrent">其中：学生宿舍面积(㎡)_现状_数据来源</label>
+                                            <input type="number" id="dormitoryAreaCurrent" name="dormitoryAreaCurrent" 
+                                                   class="form-control" value="0.00" step="0.01" readonly 
+                                                   style="background-color: #e9ecef; cursor: not-allowed;">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="otherLivingAreaCurrent">其中：其他生活用房面积(㎡)_现状_数据来源</label>
+                                            <input type="number" id="otherLivingAreaCurrent" name="otherLivingAreaCurrent" 
+                                                   class="form-control" value="0.00" step="0.01" readonly 
+                                                   style="background-color: #e9ecef; cursor: not-allowed;">
+                                            <small style="color: #6c757d; display: block; margin-top: 5px;">
+                                                生活用房总面积-学生宿舍面积
+                                            </small>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 第三行：建筑总面积 -->
+                                    <div class="form-row" style="margin-bottom: 0;">
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label for="currentBuildingArea">建筑总面积(㎡)_现状_数据来源</label>
+                                            <input type="number" id="currentBuildingArea" name="currentBuildingArea" 
+                                                   class="form-control" value="0.00" step="0.01" readonly 
+                                                   style="background-color: #e9ecef; cursor: not-allowed;">
+                                            <small style="color: #6c757d; display: block; margin-top: 5px; margin-bottom: 0;">
+                                                教学及辅助用房面积+办公用房面积+生活用房总面积+后勤辅助用房面积
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 数据来源的数据显示（可编辑） -->
+                                <div id="dataSourceDataSection2" class="card" style="margin-top: 15px; padding: 15px; background-color: #f8f9fa;">
+                                    <h4 style="margin-top: 0px; margin-bottom: 15px; color: #495057;">修改后的数据：</h4>
+                                    
+                                    <!-- 第一行：教学、办公、后勤 -->
+                                    <div class="form-row" style="margin-bottom: 10px;">
+                                        <div class="form-group">
+                                            <label for="teachingAreaCurrent2">教学及辅助用房面积(㎡)_现状</label>
+                                            <input type="text" id="teachingAreaCurrent2" name="teachingAreaCurrent2" 
+                                                   class="form-control decimal-input" value="0.00" 
+                                                   oninput="validateDecimalInput(this)" onblur="formatDecimalInput(this); calculateCurrentAreas2();">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="officeAreaCurrent2">办公用房面积(㎡)_现状</label>
+                                            <input type="text" id="officeAreaCurrent2" name="officeAreaCurrent2" 
+                                                   class="form-control decimal-input" value="0.00" 
+                                                   oninput="validateDecimalInput(this)" onblur="formatDecimalInput(this); calculateCurrentAreas2();">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="logisticsAreaCurrent2">后勤辅助用房面积(㎡)_现状</label>
+                                            <input type="text" id="logisticsAreaCurrent2" name="logisticsAreaCurrent2" 
+                                                   class="form-control decimal-input" value="0.00" 
+                                                   oninput="validateDecimalInput(this)" onblur="formatDecimalInput(this); calculateCurrentAreas2();">
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 第二行：生活用房总面积、学生宿舍、其他生活用房 -->
+                                    <div class="form-row" style="margin-bottom: 10px;">
+                                        <div class="form-group">
+                                            <label for="totalLivingAreaCurrent2">生活用房总面积(㎡)_现状</label>
+                                            <input type="text" id="totalLivingAreaCurrent2" name="totalLivingAreaCurrent2" 
+                                                   class="form-control decimal-input" value="0.00" 
+                                                   oninput="validateDecimalInput(this)" onblur="formatDecimalInput(this); calculateCurrentAreas2();">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="dormitoryAreaCurrent2">其中：学生宿舍面积(㎡)_现状</label>
+                                            <input type="text" id="dormitoryAreaCurrent2" name="dormitoryAreaCurrent2" 
+                                                   class="form-control decimal-input" value="0.00" 
+                                                   oninput="validateDecimalInput(this)" onblur="formatDecimalInput(this); calculateCurrentAreas2();">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="otherLivingAreaCurrent2">其中：其他生活用房面积(㎡)_现状</label>
+                                            <input type="text" id="otherLivingAreaCurrent2" name="otherLivingAreaCurrent2" 
+                                                   class="form-control" value="0.00" readonly
+                                                   style="background-color: #e9ecef; cursor: not-allowed;">
+                                            <small style="color: #6c757d; display: block; margin-top: 5px;">
+                                                生活用房总面积-学生宿舍面积
+                                            </small>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 第三行：建筑总面积 -->
+                                    <div class="form-row" style="margin-bottom: 0;">
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label for="currentBuildingArea2">建筑总面积(㎡)_现状</label>
+                                            <input type="text" id="currentBuildingArea2" name="currentBuildingArea2" 
+                                                   class="form-control" value="0.00" readonly
+                                                   style="background-color: #e9ecef; cursor: not-allowed;">
+                                            <small style="color: #6c757d; display: block; margin-top: 5px; margin-bottom: 0;">
+                                                教学及辅助用房面积+办公用房面积+生活用房总面积+后勤辅助用房面积
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 2. 拟建成面积模块 -->
+                            <div class="card" id="baselineAreaSection">
+                                <h3>2. 拟建成面积(截止到测算年份)</h3>
+                                
+                                <!-- 拟建成前期面积 -->
+                                <div id="plannedTeachingSection" class="card" style="margin-top: 15px; padding: 15px; background-color: #f8f9fa;">
+                                    <h4 style="margin-top: 0px; margin-bottom: 15px; color: #495057;">前期：</h4>
+                                    
+                                    <!-- 第一行：教学、办公、后勤 -->
+                                    <div class="form-row" style="margin-bottom: 10px;">
+                                        <div class="form-group">
+                                            <label for="teachingAreaPlanned">教学及辅助用房面积(㎡)_拟建成_前期</label>
+                                            <input type="text" id="teachingAreaPlanned" name="teachingAreaPlanned" 
+                                                   class="form-control decimal-input" value="0.00" 
+                                                   oninput="validateDecimalInput(this)" onblur="formatDecimalInput(this); calculatePlannedAreas1();">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="officeAreaPlanned">办公用房面积(㎡)_拟建成_前期</label>
+                                            <input type="text" id="officeAreaPlanned" name="officeAreaPlanned" 
+                                                   class="form-control decimal-input" value="0.00" 
+                                                   oninput="validateDecimalInput(this)" onblur="formatDecimalInput(this); calculatePlannedAreas1();">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="logisticsAreaPlanned">后勤辅助用房面积(㎡)_拟建成_前期</label>
+                                            <input type="text" id="logisticsAreaPlanned" name="logisticsAreaPlanned" 
+                                                   class="form-control decimal-input" value="0.00" 
+                                                   oninput="validateDecimalInput(this)" onblur="formatDecimalInput(this); calculatePlannedAreas1();">
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 第二行：生活用房总面积、学生宿舍、其他生活用房 -->
+                                    <div class="form-row" style="margin-bottom: 10px;">
+                                        <div class="form-group">
+                                            <label for="totalLivingAreaPlanned">生活用房总面积(㎡)_拟建成_前期</label>
+                                            <input type="text" id="totalLivingAreaPlanned" name="totalLivingAreaPlanned" 
+                                                   class="form-control decimal-input" value="0.00" 
+                                                   oninput="validateDecimalInput(this)" onblur="formatDecimalInput(this); calculatePlannedAreas1();">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="dormitoryAreaPlanned">其中：学生宿舍面积(㎡)_拟建成_前期</label>
+                                            <input type="text" id="dormitoryAreaPlanned" name="dormitoryAreaPlanned" 
+                                                   class="form-control decimal-input" value="0.00" 
+                                                   oninput="validateDecimalInput(this)" onblur="formatDecimalInput(this); calculatePlannedAreas1();">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="otherLivingAreaPlanned">其中：其他生活用房面积(㎡)_拟建成_前期</label>
+                                            <input type="text" id="otherLivingAreaPlanned" name="otherLivingAreaPlanned" 
+                                                   class="form-control" value="0.00" readonly
+                                                   style="background-color: #e9ecef; cursor: not-allowed;">
+                                            <small style="color: #6c757d; display: block; margin-top: 5px;">
+                                                生活用房总面积-学生宿舍面积
+                                            </small>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 第三行：建筑总面积 -->
+                                    <div class="form-row" style="margin-bottom: 0;">
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label for="plannedBuildingArea">建筑总面积(㎡)_拟建成_前期</label>
+                                            <input type="text" id="plannedBuildingArea" name="plannedBuildingArea" 
+                                                   class="form-control" value="0.00" readonly
+                                                   style="background-color: #e9ecef; cursor: not-allowed;">
+                                            <small style="color: #6c757d; display: block; margin-top: 5px; margin-bottom: 0;">
+                                                教学及辅助用房面积+办公用房面积+生活用房总面积+后勤辅助用房面积
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 拟建成在建面积 -->
+                                <div id="plannedLivingSection" class="card" style="margin-top: 15px; padding: 15px; background-color: #f8f9fa;">
+                                    <h4 style="margin-top: 0px; margin-bottom: 15px; color: #495057;">在建(含竣工)：</h4>
+                                    
+                                    <!-- 第一行：教学、办公、后勤 -->
+                                    <div class="form-row" style="margin-bottom: 10px;">
+                                        <div class="form-group">
+                                            <label for="teachingAreaPlanned2">教学及辅助用房面积(㎡)_拟建成_在建(含竣工)</label>
+                                            <input type="text" id="teachingAreaPlanned2" name="teachingAreaPlanned2" 
+                                                   class="form-control decimal-input" value="0.00" 
+                                                   oninput="validateDecimalInput(this)" onblur="formatDecimalInput(this); calculatePlannedAreas2();">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="officeAreaPlanned2">办公用房面积(㎡)_拟建成_在建(含竣工)</label>
+                                            <input type="text" id="officeAreaPlanned2" name="officeAreaPlanned2" 
+                                                   class="form-control decimal-input" value="0.00" 
+                                                   oninput="validateDecimalInput(this)" onblur="formatDecimalInput(this); calculatePlannedAreas2();">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="logisticsAreaPlanned2">后勤辅助用房面积(㎡)_拟建成_在建(含竣工)</label>
+                                            <input type="text" id="logisticsAreaPlanned2" name="logisticsAreaPlanned2" 
+                                                   class="form-control decimal-input" value="0.00" 
+                                                   oninput="validateDecimalInput(this)" onblur="formatDecimalInput(this); calculatePlannedAreas2();">
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 第二行：生活用房总面积、学生宿舍、其他生活用房 -->
+                                    <div class="form-row" style="margin-bottom: 10px;">
+                                        <div class="form-group">
+                                            <label for="totalLivingAreaPlanned2">生活用房总面积(㎡)_拟建成_在建(含竣工)</label>
+                                            <input type="text" id="totalLivingAreaPlanned2" name="totalLivingAreaPlanned2" 
+                                                   class="form-control decimal-input" value="0.00" 
+                                                   oninput="validateDecimalInput(this)" onblur="formatDecimalInput(this); calculatePlannedAreas2();">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="dormitoryAreaPlanned2">其中：学生宿舍面积(㎡)_拟建成_在建(含竣工)</label>
+                                            <input type="text" id="dormitoryAreaPlanned2" name="dormitoryAreaPlanned2" 
+                                                   class="form-control decimal-input" value="0.00" 
+                                                   oninput="validateDecimalInput(this)" onblur="formatDecimalInput(this); calculatePlannedAreas2();">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="otherLivingAreaPlanned2">其中：其他生活用房面积(㎡)_拟建成_在建(含竣工)</label>
+                                            <input type="text" id="otherLivingAreaPlanned2" name="otherLivingAreaPlanned2" 
+                                                   class="form-control" value="0.00" readonly
+                                                   style="background-color: #e9ecef; cursor: not-allowed;">
+                                            <small style="color: #6c757d; display: block; margin-top: 5px;">
+                                                生活用房总面积-学生宿舍面积
+                                            </small>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 第三行：建筑总面积 -->
+                                    <div class="form-row" style="margin-bottom: 0;">
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label for="plannedBuildingArea2">建筑总面积(㎡)_拟建成_在建(含竣工)</label>
+                                            <input type="text" id="plannedBuildingArea2" name="plannedBuildingArea2" 
+                                                   class="form-control" value="0.00" readonly
+                                                   style="background-color: #e9ecef; cursor: not-allowed;">
+                                            <small style="color: #6c757d; display: block; margin-top: 5px; margin-bottom: 0;">
+                                                教学及辅助用房面积+办公用房面积+生活用房总面积+后勤辅助用房面积
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 3. 特殊用房补助面积模块 -->
+                            <div class="card" id="specialSubsidySection">
+                                <h3>3. 特殊用房补助面积</h3>
+                                <p style="color: #6c757d; font-size: 14px; margin-bottom: 15px; line-height: 1.6;">
+                                    请填写：<br>
+                                    1. 经国家发改委、教育部、科技部等部委批准并挂牌的国家级重点实验室、工程研究中心、工程技术中心；<br>
+                                    2. 纳入国家"双一流"建设、高水平地方高校重点建设名单的学科建设所需用房；<br>
+                                    3. 经国家或市编制管理部门批准设立的专职科研机构所需用房。
+                                </p>
+                                <div id="specialSubsidiesArea">
+                                    <!-- 特殊补助项将在这里动态添加 -->
+                                </div>
+                                <button type="button" class="btn btn-outline" onclick="addSubsidyArea()" style="background: transparent; color: #3498db; border: 2px solid #3498db; padding: 12px 20px; border-radius: 6px; cursor: pointer; margin-top: 15px;">添加特殊补助</button>
+                            </div>
+                            
+                            <!-- 操作按钮区域 -->
+                            <div class="card" id="actionButtonsSection">
+                                <div style="display: flex; justify-content: flex-end; gap: 15px;">
+                                    <button type="button" id="restoreButton" class="btn btn-outline" style="background: white; color: #333; border: 2px solid #ddd; padding: 12px 30px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                                        恢复到上一次底数
+                                    </button>
+                                    <button type="button" id="updateButton" class="btn btn-primary" style="background: linear-gradient(135deg, #3498db, #2980b9); color: white; border: none; padding: 12px 30px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                                        更新本次底数
+                                    </button>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 引入公共组件管理器 -->
+    <script src="../js/componentManager.js"></script>
+    
+    <!-- 引入工具函数 -->
+    <script src="../js/utils.js"></script>
+    
+    <!-- 引入API模块 -->
+    <script src="../js/api.js"></script>
+    
+    <!-- 引入认证模块 -->
+    <script src="../js/auth.js"></script>
+
+    <!-- 引入建筑面积管理模块 -->
+    <script src="../js/areaManagement.js"></script>
+
+    <!-- 页面初始化脚本 -->
+    <script>
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                console.log('建筑面积管理页面开始加载...');
+                
+                // 初始化页面结构
+                await ComponentManager.initPageStructure({
+                    title: '建筑面积管理',
+                    description: '第一次录入后，形成建筑面积底数，可重复用于测算，无需重复录入',
+                    activeMenu: 'menu-area-management'
+                });
+                
+                // 初始化认证模块
+                await AuthManager.initialize();
+                console.log('认证模块初始化完成');
+
+                // 立即更新用户信息显示
+                const user = AuthManager.getCurrentUser();
+                if (user) {
+                    AuthManager.updateUserInfo(user);
+                    const userName = document.getElementById('userName');
+                    if (userName && userName.textContent === '加载中...') {
+                        userName.textContent = user.real_name || user.username || '未知用户';
+                    }
+                    
+                    // 根据用户角色显示/隐藏菜单项（传递完整的用户对象）
+                    AuthManager.updateMenuVisibility(user);
+                }
+                
+                // 初始化页面内容
+                initializePage();
+                
+                console.log('建筑面积管理页面初始化成功');
+            } catch (error) {
+                console.error('页面初始化失败:', error);
+                // 如果是重定向相关错误，不做任何处理（已经在重定向中）
+                if (error.message && error.message.includes('重定向')) {
+                    console.log('正在重定向到登录页，停止页面初始化');
+                    return;
+                }
+                // 其他错误显示提示
+                showError('页面初始化失败，请刷新重试');
+            }
+        });
+
+        /**
+         * 初始化页面内容
+         */
+        function initializePage() {
+            console.log('建筑面积管理页面内容初始化...');
+            
+            // 加载学校列表
+            loadSchoolList();
+            
+            // 绑定按钮事件
+            bindButtonEvents();
+        }
+        
+        /**
+         * 绑定按钮事件
+         */
+        function bindButtonEvents() {
+            // 使用 setTimeout 确保 DOM 完全加载
+            setTimeout(() => {
+                const updateButton = document.getElementById('updateButton');
+                const restoreButton = document.getElementById('restoreButton');
+                
+                console.log('查找按钮元素:', {
+                    updateButton: updateButton,
+                    restoreButton: restoreButton,
+                    updateButtonExists: !!updateButton,
+                    restoreButtonExists: !!restoreButton
+                });
+                
+                if (updateButton) {
+                    updateButton.addEventListener('click', updateBaseline);
+                    console.log('✅ 更新底数按钮事件已绑定');
+                    
+                    // 测试：添加一个临时的点击监听器确认事件系统正常
+                    updateButton.addEventListener('click', function() {
+                        console.log('🔘 更新按钮被点击了！');
+                    });
+                } else {
+                    console.error('❌ 未找到更新底数按钮 (#updateButton)');
+                }
+                
+                if (restoreButton) {
+                    restoreButton.addEventListener('click', restoreBaseline);
+                    console.log('✅ 恢复底数按钮事件已绑定');
+                    
+                    // 测试：添加一个临时的点击监听器确认事件系统正常
+                    restoreButton.addEventListener('click', function() {
+                        console.log('🔘 恢复按钮被点击了！');
+                    });
+                } else {
+                    console.error('❌ 未找到恢复底数按钮 (#restoreButton)');
+                }
+            }, 500);  // 延迟500ms确保DOM加载完成
+        }
+
+        /**
+         * 加载学校列表
+         */
+        async function loadSchoolList() {
+            try {
+                const user = AuthManager.getCurrentUser();
+                const schoolSelect = document.getElementById('schoolName');
+                
+                if (!schoolSelect) {
+                    console.error('未找到学校选择下拉框');
+                    return;
+                }
+
+                // 获取学校注册表
+                const response = await fetch('/api/schools/registry', {
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error('获取学校列表失败');
+                }
+
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    // 清空现有选项（保留第一个"请选择学校"）
+                    schoolSelect.innerHTML = '<option value="">请选择学校</option>';
+                    
+                    // 添加学校选项
+                    result.data.forEach(school => {
+                        const option = document.createElement('option');
+                        option.value = school.school_name;
+                        option.textContent = school.school_name;
+                        option.dataset.schoolType = school.school_type || '';
+                        schoolSelect.appendChild(option);
+                    });
+
+                    // 如果是学校用户，固定选择对应学校
+                    if (user && user.role === 'school' && user.school_name) {
+                        schoolSelect.value = user.school_name;
+                        schoolSelect.disabled = true;
+                        schoolSelect.style.background = '#e9ecef';
+                        schoolSelect.style.cursor = 'not-allowed';
+                        handleSchoolChange();
+                        
+                        console.log('学校用户，已固定学校选择:', user.school_name);
+                    }
+                    
+                    console.log('学校列表加载成功，共', result.data.length, '所学校');
+                } else {
+                    throw new Error('学校数据格式错误');
+                }
+            } catch (error) {
+                console.error('加载学校列表失败:', error);
+                showMessage('加载学校列表失败: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * 处理学校选择变化
+         */
+        function handleSchoolChange() {
+            const schoolSelect = document.getElementById('schoolName');
+            const selectedOption = schoolSelect.options[schoolSelect.selectedIndex];
+            const schoolTypeDisplay = document.getElementById('schoolTypeDisplay');
+
+            if (schoolSelect.value && schoolTypeDisplay) {
+                // 显示学校类型
+                const schoolType = selectedOption.dataset.schoolType || '';
+                schoolTypeDisplay.textContent = schoolType ? `学校类型: ${schoolType}` : '';
+                schoolTypeDisplay.style.display = 'block';
+                
+                console.log('已选择学校:', schoolSelect.value, '学校类型:', schoolType);
+                
+                // 加载该学校的数据来源列表
+                loadDataSources(schoolSelect.value);
+                
+                // 自动加载底数数据
+                autoLoadBaseline(schoolSelect.value);
+                
+                // TODO: 加载该学校的其他数据
+                // loadCurrentAreaData();
+                // loadBaselineAreaData();
+                // loadSpecialSubsidyData();
+                // loadPlannedStudentsData();
+            } else if (schoolTypeDisplay) {
+                // 隐藏学校类型
+                schoolTypeDisplay.textContent = '';
+                schoolTypeDisplay.style.display = 'none';
+                
+                // 重置数据来源下拉栏
+                resetDataSourceSelect();
+                
+                // 清空表单数据
+                clearFormData();
+            }
+        }
+
+        /**
+         * 自动加载底数数据
+         */
+        async function autoLoadBaseline(schoolName) {
+            try {
+                console.log('📢 自动加载底数数据:', schoolName);
+                
+                // 获取当前用户信息
+                const user = AuthManager.getCurrentUser();
+                const username = user?.username;
+
+                if (!username) {
+                    console.warn('无法获取用户信息，跳过自动加载底数');
+                    return;
+                }
+
+                // 调用API获取底数
+                const response = await fetch(
+                    `/api/baseline-areas?schoolName=${encodeURIComponent(schoolName)}&submitterUsername=${encodeURIComponent(username)}`,
+                    { credentials: 'include' }
+                );
+
+                if (!response.ok) {
+                    console.log('该学校暂无底数数据');
+                    return;
+                }
+
+                const result = await response.json();
+
+                if (result.success && result.data && result.data.length > 0) {
+                    const baseline = result.data[0];
+                    console.log('✅ 自动加载底数成功:', baseline);
+                    
+                    // 填充数据来源
+                    const dataSourceElement = document.getElementById('dataSource');
+                    if (dataSourceElement && baseline.data_source) {
+                        // 等待数据来源列表加载完成
+                        setTimeout(() => {
+                            dataSourceElement.value = baseline.data_source;
+                            console.log('✅ 已自动填充数据来源:', baseline.data_source);
+                        }, 500);
+                    }
+                    
+                    // 填充现状面积（第二个数据卡片）
+                    const currentFields = [
+                        { id: 'teachingAreaCurrent2', value: baseline.current_teaching_area },
+                        { id: 'officeAreaCurrent2', value: baseline.current_office_area },
+                        { id: 'logisticsAreaCurrent2', value: baseline.current_logistics_area },
+                        { id: 'totalLivingAreaCurrent2', value: baseline.current_living_total_area },
+                        { id: 'dormitoryAreaCurrent2', value: baseline.current_dormitory_area }
+                    ];
+                    
+                    currentFields.forEach(field => {
+                        const element = document.getElementById(field.id);
+                        if (element) {
+                            element.value = safeToFixed(field.value);
+                        }
+                    });
+                    
+                    // 填充拟建成前期
+                    const plannedFields = [
+                        { id: 'teachingAreaPlanned', value: baseline.planned_teaching_area },
+                        { id: 'officeAreaPlanned', value: baseline.planned_office_area },
+                        { id: 'logisticsAreaPlanned', value: baseline.planned_logistics_area },
+                        { id: 'totalLivingAreaPlanned', value: baseline.planned_living_total_area },
+                        { id: 'dormitoryAreaPlanned', value: baseline.planned_dormitory_area }
+                    ];
+                    
+                    plannedFields.forEach(field => {
+                        const element = document.getElementById(field.id);
+                        if (element) {
+                            element.value = safeToFixed(field.value);
+                        }
+                    });
+                    
+                    // 填充拟建成在建
+                    const underConstructionFields = [
+                        { id: 'teachingAreaPlanned2', value: baseline.under_construction_teaching_area },
+                        { id: 'officeAreaPlanned2', value: baseline.under_construction_office_area },
+                        { id: 'logisticsAreaPlanned2', value: baseline.under_construction_logistics_area },
+                        { id: 'totalLivingAreaPlanned2', value: baseline.under_construction_living_total_area },
+                        { id: 'dormitoryAreaPlanned2', value: baseline.under_construction_dormitory_area }
+                    ];
+                    
+                    underConstructionFields.forEach(field => {
+                        const element = document.getElementById(field.id);
+                        if (element) {
+                            element.value = safeToFixed(field.value);
+                        }
+                    });
+                    
+                    // 触发自动计算
+                    calculateCurrentAreas2();
+                    calculatePlannedAreas1();
+                    calculatePlannedAreas2();
+                    
+                    // 加载特殊补助
+                    await loadSpecialSubsidies(schoolName, username);
+                    
+                    console.log('✅ 底数数据已自动加载完成');
+                } else {
+                    console.log('ℹ️ 该学校暂无底数数据');
+                }
+
+            } catch (error) {
+                console.error('自动加载底数失败:', error);
+                // 不显示错误消息，因为这是自动操作
+            }
+        }
+
+        /**
+         * 清空表单数据
+         */
+        function clearFormData() {
+            // 清空所有面积输入框
+            const areaInputs = document.querySelectorAll('input[type="number"]');
+            areaInputs.forEach(input => {
+                if (!input.readOnly) {
+                    input.value = '0.00';
+                }
+            });
+            
+            // 清空特殊补助
+            const container = document.getElementById('specialSubsidiesArea');
+            if (container) {
+                const subsidyItems = container.querySelectorAll('.subsidy-item:not(.subsidy-summary)');
+                subsidyItems.forEach(item => item.remove());
+                updateSubsidySummaryArea();
+            }
+            
+            console.log('✅ 表单数据已清空');
+        }
+
+        /**
+         * 加载数据来源列表
+         */
+        async function loadDataSources(schoolName) {
+            const dataSourceSelect = document.getElementById('dataSource');
+            const dataSourceHint = document.getElementById('dataSourceHint');
+            
+            if (!dataSourceSelect) return;
+            
+            try {
+                // 清空现有选项
+                dataSourceSelect.innerHTML = '<option value="">加载中...</option>';
+                dataSourceSelect.disabled = true;
+                
+                // 从current_area_presets表获取该学校的所有数据来源
+                const response = await fetch(`/api/current-area-presets/school/${encodeURIComponent(schoolName)}`, {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    // 404表示该学校没有记录，这是正常情况
+                    if (response.status === 404) {
+                        dataSourceSelect.innerHTML = '<option value="">该学校暂无数据来源</option>';
+                        if (dataSourceHint) {
+                            dataSourceHint.style.display = 'none';
+                        }
+                        return;
+                    }
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                // 清空下拉框
+                dataSourceSelect.innerHTML = '<option value="">请选择数据来源</option>';
+                
+                if (result.success && result.data && result.data.length > 0) {
+                    // 提取唯一的数据来源
+                    const dataSources = [...new Set(result.data
+                        .map(item => item.data_source)
+                        .filter(source => source && source.trim() !== ''))];
+                    
+                    if (dataSources.length > 0) {
+                        // 添加数据来源选项
+                        dataSources.forEach(source => {
+                            const option = document.createElement('option');
+                            option.value = source;
+                            option.textContent = source;
+                            dataSourceSelect.appendChild(option);
+                        });
+                        
+                        dataSourceSelect.disabled = false;
+                        if (dataSourceHint) {
+                            dataSourceHint.style.display = 'block';
+                        }
+                        
+                        console.log(`已加载 ${dataSources.length} 个数据来源`);
+                    } else {
+                        dataSourceSelect.innerHTML = '<option value="">该学校暂无数据来源</option>';
+                        if (dataSourceHint) {
+                            dataSourceHint.style.display = 'none';
+                        }
+                    }
+                } else {
+                    dataSourceSelect.innerHTML = '<option value="">该学校暂无数据来源</option>';
+                    if (dataSourceHint) {
+                        dataSourceHint.style.display = 'none';
+                    }
+                }
+                
+            } catch (error) {
+                console.error('加载数据来源失败:', error);
+                dataSourceSelect.innerHTML = '<option value="">加载失败，请重试</option>';
+                if (dataSourceHint) {
+                    dataSourceHint.style.display = 'none';
+                }
+                showMessage('加载数据来源失败: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * 重置数据来源下拉栏
+         */
+        function resetDataSourceSelect() {
+            const dataSourceSelect = document.getElementById('dataSource');
+            const dataSourceHint = document.getElementById('dataSourceHint');
+            
+            if (dataSourceSelect) {
+                dataSourceSelect.innerHTML = '<option value="">请先选择学校</option>';
+                dataSourceSelect.disabled = true;
+            }
+            
+            if (dataSourceHint) {
+                dataSourceHint.style.display = 'none';
+            }
+        }
+
+        /**
+         * 验证小数输入 - 只允许数字和一个小数点
+         */
+        function validateDecimalInput(input) {
+            // 保存光标位置
+            const cursorPosition = input.selectionStart;
+            const oldValue = input.value;
+            
+            // 只允许数字和一个小数点
+            let newValue = input.value.replace(/[^\d.]/g, '');
+            
+            // 确保只有一个小数点
+            const parts = newValue.split('.');
+            if (parts.length > 2) {
+                newValue = parts[0] + '.' + parts.slice(1).join('');
+            }
+            
+            // 限制小数点后最多2位
+            if (parts.length === 2 && parts[1].length > 2) {
+                newValue = parts[0] + '.' + parts[1].substring(0, 2);
+            }
+            
+            // 如果值改变了，更新输入框
+            if (newValue !== oldValue) {
+                input.value = newValue;
+                // 恢复光标位置
+                const diff = oldValue.length - newValue.length;
+                input.setSelectionRange(cursorPosition - diff, cursorPosition - diff);
+            }
+        }
+
+        /**
+         * 格式化小数输入 - 失焦时自动格式化为2位小数
+         */
+        function formatDecimalInput(input) {
+            let value = input.value.trim();
+            
+            // 如果为空，设置为0.00
+            if (value === '' || value === '.') {
+                input.value = '0.00';
+                return;
+            }
+            
+            // 转换为数字并格式化为2位小数
+            const numValue = parseFloat(value);
+            if (!isNaN(numValue)) {
+                input.value = numValue.toFixed(2);
+            } else {
+                input.value = '0.00';
+            }
+        }
+
+        /**
+         * 计算第二个数据卡片中的自动计算字段
+         */
+        function calculateCurrentAreas2() {
+            try {
+                // 获取所有输入值
+                const teaching = parseFloat(document.getElementById('teachingAreaCurrent2').value) || 0;
+                const office = parseFloat(document.getElementById('officeAreaCurrent2').value) || 0;
+                const logistics = parseFloat(document.getElementById('logisticsAreaCurrent2').value) || 0;
+                const totalLiving = parseFloat(document.getElementById('totalLivingAreaCurrent2').value) || 0;
+                const dormitory = parseFloat(document.getElementById('dormitoryAreaCurrent2').value) || 0;
+                
+                // 计算其他生活用房面积 = 生活用房总面积 - 学生宿舍面积
+                const otherLiving = Math.max(0, totalLiving - dormitory);
+                document.getElementById('otherLivingAreaCurrent2').value = otherLiving.toFixed(2);
+                
+                // 计算建筑总面积 = 教学 + 办公 + 生活用房总面积 + 后勤
+                const totalBuilding = teaching + office + totalLiving + logistics;
+                document.getElementById('currentBuildingArea2').value = totalBuilding.toFixed(2);
+                
+            } catch (error) {
+                console.error('计算现状面积失败:', error);
+            }
+        }
+
+        /**
+         * 计算拟建成面积第一个卡片的自动计算字段
+         */
+        function calculatePlannedAreas1() {
+            try {
+                // 获取所有输入值
+                const teaching = parseFloat(document.getElementById('teachingAreaPlanned').value) || 0;
+                const office = parseFloat(document.getElementById('officeAreaPlanned').value) || 0;
+                const logistics = parseFloat(document.getElementById('logisticsAreaPlanned').value) || 0;
+                const totalLiving = parseFloat(document.getElementById('totalLivingAreaPlanned').value) || 0;
+                const dormitory = parseFloat(document.getElementById('dormitoryAreaPlanned').value) || 0;
+                
+                // 计算其他生活用房面积 = 生活用房总面积 - 学生宿舍面积
+                const otherLiving = Math.max(0, totalLiving - dormitory);
+                document.getElementById('otherLivingAreaPlanned').value = otherLiving.toFixed(2);
+                
+                // 计算建筑总面积 = 教学 + 办公 + 生活用房总面积 + 后勤
+                const totalBuilding = teaching + office + totalLiving + logistics;
+                document.getElementById('plannedBuildingArea').value = totalBuilding.toFixed(2);
+                
+            } catch (error) {
+                console.error('计算拟建成面积失败:', error);
+            }
+        }
+
+        /**
+         * 计算拟建成面积第二个卡片的自动计算字段
+         */
+        function calculatePlannedAreas2() {
+            try {
+                // 获取所有输入值
+                const teaching = parseFloat(document.getElementById('teachingAreaPlanned2').value) || 0;
+                const office = parseFloat(document.getElementById('officeAreaPlanned2').value) || 0;
+                const logistics = parseFloat(document.getElementById('logisticsAreaPlanned2').value) || 0;
+                const totalLiving = parseFloat(document.getElementById('totalLivingAreaPlanned2').value) || 0;
+                const dormitory = parseFloat(document.getElementById('dormitoryAreaPlanned2').value) || 0;
+                
+                // 计算其他生活用房面积 = 生活用房总面积 - 学生宿舍面积
+                const otherLiving = Math.max(0, totalLiving - dormitory);
+                document.getElementById('otherLivingAreaPlanned2').value = otherLiving.toFixed(2);
+                
+                // 计算建筑总面积 = 教学 + 办公 + 生活用房总面积 + 后勤
+                const totalBuilding = teaching + office + totalLiving + logistics;
+                document.getElementById('plannedBuildingArea2').value = totalBuilding.toFixed(2);
+                
+            } catch (error) {
+                console.error('计算拟建成面积失败:', error);
+            }
+        }
+
+        /**
+         * 处理数据来源选择变化
+         */
+        function handleDataSourceChange() {
+            const dataSourceSelect = document.getElementById('dataSource');
+            const schoolSelect = document.getElementById('schoolName');
+            
+            if (dataSourceSelect.value && schoolSelect.value) {
+                console.log('已选择数据来源:', dataSourceSelect.value);
+                // 加载该数据来源的详细数据
+                loadCurrentAreaDetails(schoolSelect.value, dataSourceSelect.value);
+            } else {
+                // 隐藏数据显示区域并重置所有字段
+                resetCurrentAreaData();
+            }
+        }
+
+        /**
+         * 加载现状面积详细数据
+         */
+        async function loadCurrentAreaDetails(schoolName, dataSource) {
+            try {
+                // 调用API获取特定学校和数据来源的现状面积数据
+                const response = await fetch(
+                    `/api/current-area-presets/school/${encodeURIComponent(schoolName)}/source/${encodeURIComponent(dataSource)}`,
+                    { credentials: 'include' }
+                );
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    // 填充数据到表单字段（第一个卡片 - 只读）
+                    const data = result.data;
+                    document.getElementById('teachingAreaCurrent').value = Number(data.teaching_area_current || 0).toFixed(2);
+                    document.getElementById('officeAreaCurrent').value = Number(data.office_area_current || 0).toFixed(2);
+                    document.getElementById('logisticsAreaCurrent').value = Number(data.logistics_area_current || 0).toFixed(2);
+                    document.getElementById('totalLivingAreaCurrent').value = Number(data.total_living_area_current || 0).toFixed(2);
+                    document.getElementById('dormitoryAreaCurrent').value = Number(data.dormitory_area_current || 0).toFixed(2);
+                    document.getElementById('otherLivingAreaCurrent').value = Number(data.other_living_area_current || 0).toFixed(2);
+                    document.getElementById('currentBuildingArea').value = Number(data.current_building_area || 0).toFixed(2);
+                    
+                    // 同时填充数据到第二个卡片（可编辑）- 只填充可编辑字段
+                    document.getElementById('teachingAreaCurrent2').value = Number(data.teaching_area_current || 0).toFixed(2);
+                    document.getElementById('officeAreaCurrent2').value = Number(data.office_area_current || 0).toFixed(2);
+                    document.getElementById('logisticsAreaCurrent2').value = Number(data.logistics_area_current || 0).toFixed(2);
+                    document.getElementById('totalLivingAreaCurrent2').value = Number(data.total_living_area_current || 0).toFixed(2);
+                    document.getElementById('dormitoryAreaCurrent2').value = Number(data.dormitory_area_current || 0).toFixed(2);
+                    // 不直接填充 otherLivingAreaCurrent2 和 currentBuildingArea2，而是通过计算得出
+                    
+                    // 触发自动计算
+                    calculateCurrentAreas2();
+                    
+                    console.log('现状面积数据加载成功');
+                } else {
+                    throw new Error('未找到数据');
+                }
+                
+            } catch (error) {
+                console.error('加载现状面积数据失败:', error);
+                showMessage('加载现状面积数据失败: ' + error.message, 'error');
+                resetCurrentAreaData();
+            }
+        }
+
+        /**
+         * 重置现状面积数据显示
+         */
+        function resetCurrentAreaData() {
+            // 重置所有字段为0（数据区域始终显示）
+            const fields = [
+                'teachingAreaCurrent',
+                'officeAreaCurrent',
+                'logisticsAreaCurrent',
+                'totalLivingAreaCurrent',
+                'dormitoryAreaCurrent',
+                'otherLivingAreaCurrent',
+                'currentBuildingArea'
+            ];
+            
+            // 重置第一个卡片（只读）
+            fields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.value = '0.00';
+                }
+            });
+            
+            // 重置第二个卡片（可编辑字段）
+            const editableFields = [
+                'teachingAreaCurrent2',
+                'officeAreaCurrent2',
+                'logisticsAreaCurrent2',
+                'totalLivingAreaCurrent2',
+                'dormitoryAreaCurrent2'
+            ];
+            
+            editableFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.value = '0.00';
+                }
+            });
+            
+            // 触发自动计算来更新计算字段
+            calculateCurrentAreas2();
+        }
+
+        /**
+         * 显示消息提示
+         */
+        function showMessage(message, type = 'info') {
+            // 创建消息提示元素
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `alert alert-${type}`;
+            messageDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                min-width: 300px;
+                padding: 15px 20px;
+                border-radius: 4px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                z-index: 9999;
+                animation: slideInRight 0.3s ease;
+            `;
+            
+            const colors = {
+                'success': { bg: '#d4edda', border: '#c3e6cb', text: '#155724' },
+                'error': { bg: '#f8d7da', border: '#f5c6cb', text: '#721c24' },
+                'warning': { bg: '#fff3cd', border: '#ffeaa7', text: '#856404' },
+                'info': { bg: '#d1ecf1', border: '#bee5eb', text: '#0c5460' }
+            };
+            
+            const color = colors[type] || colors.info;
+            messageDiv.style.backgroundColor = color.bg;
+            messageDiv.style.borderLeft = `4px solid ${color.border}`;
+            messageDiv.style.color = color.text;
+            messageDiv.textContent = message;
+            
+            document.body.appendChild(messageDiv);
+            
+            // 3秒后自动移除
+            setTimeout(() => {
+                messageDiv.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => messageDiv.remove(), 300);
+            }, 3000);
+        }
+
+        // 添加动画样式
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideInRight {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOutRight {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        /**
+         * 添加特殊补助项
+         */
+        function addSubsidyArea() {
+            const container = document.getElementById('specialSubsidiesArea');
+            if (!container) {
+                console.error('找不到特殊补助容器');
+                return;
+            }
+            
+            // 如果是第一个补助项，添加表头
+            if (container.children.length === 0) {
+                const headerHtml = `
+                    <div class="subsidy-header" style="display: flex; align-items: center; margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px; font-weight: bold; color: #495057;">
+                        <div style="flex: 2; margin-right: 15px;">特殊用房补助名称 *</div>
+                        <div style="flex: 1; margin-right: 15px;">特殊用房补助建筑面积(m²) *</div>
+                        <div style="width: 80px;">操作</div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', headerHtml);
+            }
+            
+            // 创建新的补助项
+            const subsidyHtml = `
+                <div class="subsidy-item" style="display: flex; align-items: center; margin-bottom: 10px; padding: 10px; background: white; border: 1px solid #e9ecef; border-radius: 5px;">
+                    <div style="flex: 2; margin-right: 15px;">
+                        <div class="form-group">
+                            <input type="text" name="subsidyName[]" placeholder="例如：重点实验室补助" class="form-control subsidy-name-input" style="background: white; border: 1px solid #ddd; padding: 8px; border-radius: 4px; width: 100%;">
+                        </div>
+                    </div>
+                    <div style="flex: 1; margin-right: 15px;">
+                        <div class="form-group">
+                            <input type="text" name="subsidyArea[]" value="0.00" class="form-control subsidy-area-input decimal-input" oninput="validateDecimalInput(this)" onblur="formatDecimalInput(this); updateSubsidySummaryArea();" style="background: white; border: 1px solid #ddd; padding: 8px; border-radius: 4px; width: 100%;">
+                        </div>
+                    </div>
+                    <div style="width: 80px;">
+                        <button type="button" onclick="removeSubsidyArea(this)" style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">删除</button>
+                    </div>
+                </div>
+            `;
+            
+            // 插入到汇总行之前
+            const summaryRow = container.querySelector('.subsidy-summary');
+            if (summaryRow) {
+                summaryRow.insertAdjacentHTML('beforebegin', subsidyHtml);
+            } else {
+                container.insertAdjacentHTML('beforeend', subsidyHtml);
+                // 添加汇总行
+                addSubsidySummaryArea();
+            }
+            
+            updateSubsidySummaryArea();
+        }
+
+        /**
+         * 删除特殊补助项
+         */
+        function removeSubsidyArea(button) {
+            const subsidyItem = button.closest('.subsidy-item');
+            if (subsidyItem) {
+                subsidyItem.remove();
+                
+                // 检查是否还有补助项（除了汇总行）
+                const container = document.getElementById('specialSubsidiesArea');
+                const remainingItems = container.querySelectorAll('.subsidy-item:not(.subsidy-summary)');
+                
+                if (remainingItems.length === 0) {
+                    // 如果没有补助项了，清空整个容器（包括表头和汇总行）
+                    container.innerHTML = '';
+                } else {
+                    updateSubsidySummaryArea();
+                }
+            }
+        }
+
+        /**
+         * 添加补助汇总行
+         */
+        function addSubsidySummaryArea() {
+            const container = document.getElementById('specialSubsidiesArea');
+            if (!container || container.querySelector('.subsidy-summary')) return;
+            
+            const summaryHtml = `
+                <div class="subsidy-summary subsidy-item" style="display: flex; align-items: center; margin-top: 15px; padding: 10px; background: transparent; border: none; border-radius: 5px; font-weight: bold;">
+                    <div style="flex: 2; margin-right: 15px;">
+                        <div style="margin-bottom: 5px; color: #495057; font-size: 14px;">特殊用房补助数量</div>
+                        <input type="text" id="subsidyTotalCountArea" readonly class="form-control calculated-field" value="0" style="background: #f5f5f5; border: none; padding: 8px; border-radius: 4px; width: 100%; font-weight: bold; text-align: center;">
+                    </div>
+                    <div style="flex: 1; margin-right: 15px;">
+                        <div style="margin-bottom: 5px; color: #495057; font-size: 14px;">特殊用房补助建筑总面积(m²)</div>
+                        <input type="text" id="subsidyTotalAreaSum" readonly class="form-control calculated-field" value="0.00" style="background: #f5f5f5; border: none; padding: 8px; border-radius: 4px; width: 100%; font-weight: bold; text-align: center;">
+                    </div>
+                    <div style="width: 80px;"></div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', summaryHtml);
+        }
+
+        /**
+         * 更新补助汇总
+         */
+        function updateSubsidySummaryArea() {
+            const container = document.getElementById('specialSubsidiesArea');
+            if (!container) return;
+            
+            const subsidyInputs = container.querySelectorAll('input[name="subsidyArea[]"]');
+            let total = 0;
+            let count = 0;
+            
+            subsidyInputs.forEach((input) => {
+                const value = parseFloat(input.value) || 0;
+                total += value;
+            });
+            
+            // 计算所有添加的补助项目数量
+            count = subsidyInputs.length;
+            
+            const totalInput = document.getElementById('subsidyTotalAreaSum');
+            if (totalInput) {
+                totalInput.value = total.toFixed(2);
+            }
+            
+            const countInput = document.getElementById('subsidyTotalCountArea');
+            if (countInput) {
+                countInput.value = count;
+            }
+        }
+
+        /**
+         * 格式化补助面积输入
+         */
+        function formatSubsidyArea(input) {
+            formatDecimalInput(input);
+        }
+
+        /**
+         * 收集页面所有数据
+         */
+        function collectPageData() {
+            const schoolName = document.getElementById('schoolName').value;
+            
+            if (!schoolName) {
+                showMessage('请先选择学校', 'warning');
+                return null;
+            }
+
+            // 获取数据来源
+            const dataSource = document.getElementById('dataSource').value || '自填';
+
+            // 1. 收集现状面积数据（第二个数据卡片 - 可编辑的）
+            const currentData = {
+                teaching_area: parseFloat(document.getElementById('teachingAreaCurrent2')?.value) || 0,
+                office_area: parseFloat(document.getElementById('officeAreaCurrent2')?.value) || 0,
+                logistics_area: parseFloat(document.getElementById('logisticsAreaCurrent2')?.value) || 0,
+                living_total_area: parseFloat(document.getElementById('totalLivingAreaCurrent2')?.value) || 0,
+                dormitory_area: parseFloat(document.getElementById('dormitoryAreaCurrent2')?.value) || 0
+            };
+
+            // 2. 收集拟建成前期数据（第一个卡片 - 没有数字后缀）
+            const plannedData = {
+                teaching_area: parseFloat(document.getElementById('teachingAreaPlanned')?.value) || 0,
+                office_area: parseFloat(document.getElementById('officeAreaPlanned')?.value) || 0,
+                logistics_area: parseFloat(document.getElementById('logisticsAreaPlanned')?.value) || 0,
+                living_total_area: parseFloat(document.getElementById('totalLivingAreaPlanned')?.value) || 0,
+                dormitory_area: parseFloat(document.getElementById('dormitoryAreaPlanned')?.value) || 0
+            };
+
+            // 3. 收集拟建成在建数据（第二个卡片 - 后缀2）
+            const underConstructionData = {
+                teaching_area: parseFloat(document.getElementById('teachingAreaPlanned2')?.value) || 0,
+                office_area: parseFloat(document.getElementById('officeAreaPlanned2')?.value) || 0,
+                logistics_area: parseFloat(document.getElementById('logisticsAreaPlanned2')?.value) || 0,
+                living_total_area: parseFloat(document.getElementById('totalLivingAreaPlanned2')?.value) || 0,
+                dormitory_area: parseFloat(document.getElementById('dormitoryAreaPlanned2')?.value) || 0
+            };
+
+            // 4. 收集特殊补助数据
+            const specialSubsidies = [];
+            const subsidyItems = document.querySelectorAll('#specialSubsidiesArea .subsidy-item');
+            
+            subsidyItems.forEach(item => {
+                const nameInput = item.querySelector('input[name="subsidyName[]"]');
+                const areaInput = item.querySelector('input[name="subsidyArea[]"]');
+                
+                const name = nameInput?.value?.trim();
+                const area = parseFloat(areaInput?.value) || 0;
+                
+                if (name) {  // 只保存有名称的补助项
+                    specialSubsidies.push({
+                        subsidy_name: name,
+                        subsidy_area: area
+                    });
+                }
+            });
+
+            return {
+                schoolName,
+                baselineData: {
+                    data_source: dataSource,
+                    current_teaching_area: currentData.teaching_area,
+                    current_office_area: currentData.office_area,
+                    current_logistics_area: currentData.logistics_area,
+                    current_living_total_area: currentData.living_total_area,
+                    current_dormitory_area: currentData.dormitory_area,
+                    planned_teaching_area: plannedData.teaching_area,
+                    planned_office_area: plannedData.office_area,
+                    planned_logistics_area: plannedData.logistics_area,
+                    planned_living_total_area: plannedData.living_total_area,
+                    planned_dormitory_area: plannedData.dormitory_area,
+                    under_construction_teaching_area: underConstructionData.teaching_area,
+                    under_construction_office_area: underConstructionData.office_area,
+                    under_construction_logistics_area: underConstructionData.logistics_area,
+                    under_construction_living_total_area: underConstructionData.living_total_area,
+                    under_construction_dormitory_area: underConstructionData.dormitory_area
+                },
+                specialSubsidies
+            };
+        }
+
+        /**
+         * 验证数据有效性
+         * @returns {Object|null} - 如果验证失败，返回 {valid: false, message: string, elementId: string}；如果成功，返回 {valid: true}
+         */
+        function validateBaselineData() {
+            // 1. 检查数据来源是否已选择
+            const dataSource = document.getElementById('dataSource').value;
+            if (!dataSource || dataSource === '') {
+                return {
+                    valid: false,
+                    message: '请选择"数据来源_建筑面积(㎡)_现状"',
+                    elementId: 'dataSource'
+                };
+            }
+
+            // 2. 检查所有面积值是否为负数
+            const areaFields = [
+                // 现状面积
+                { id: 'teachingAreaCurrent2', label: '教学及辅助用房面积(㎡)_现状' },
+                { id: 'officeAreaCurrent2', label: '办公及管理用房面积(㎡)_现状' },
+                { id: 'logisticsAreaCurrent2', label: '生活福利及其他用房面积(㎡)_现状' },
+                { id: 'totalLivingAreaCurrent2', label: '各部分生活用房总面积(㎡)_现状' },
+                { id: 'dormitoryAreaCurrent2', label: '其中：学生宿舍面积(㎡)_现状' },
+                // 拟建成前期
+                { id: 'teachingAreaPlanned', label: '教学及辅助用房面积(㎡)_拟建成前期' },
+                { id: 'officeAreaPlanned', label: '办公及管理用房面积(㎡)_拟建成前期' },
+                { id: 'logisticsAreaPlanned', label: '生活福利及其他用房面积(㎡)_拟建成前期' },
+                { id: 'totalLivingAreaPlanned', label: '各部分生活用房总面积(㎡)_拟建成前期' },
+                { id: 'dormitoryAreaPlanned', label: '其中：学生宿舍面积(㎡)_拟建成前期' },
+                // 拟建成在建
+                { id: 'teachingAreaPlanned2', label: '教学及辅助用房面积(㎡)_拟建成在建' },
+                { id: 'officeAreaPlanned2', label: '办公及管理用房面积(㎡)_拟建成在建' },
+                { id: 'logisticsAreaPlanned2', label: '生活福利及其他用房面积(㎡)_拟建成在建' },
+                { id: 'totalLivingAreaPlanned2', label: '各部分生活用房总面积(㎡)_拟建成在建' },
+                { id: 'dormitoryAreaPlanned2', label: '其中：学生宿舍面积(㎡)_拟建成在建' }
+            ];
+
+            for (const field of areaFields) {
+                const element = document.getElementById(field.id);
+                if (element) {
+                    const value = parseFloat(element.value) || 0;
+                    if (value < 0) {
+                        return {
+                            valid: false,
+                            message: `"${field.label}"的值不能为负数`,
+                            elementId: field.id
+                        };
+                    }
+                }
+            }
+
+            // 3. 检查各部分生活用房总面积是否小于学生宿舍面积（三个数据集）
+            const livingRoomChecks = [
+                { 
+                    totalId: 'totalLivingAreaCurrent2', 
+                    dormitoryId: 'dormitoryAreaCurrent2',
+                    label: '现状'
+                },
+                { 
+                    totalId: 'totalLivingAreaPlanned', 
+                    dormitoryId: 'dormitoryAreaPlanned',
+                    label: '拟建成前期'
+                },
+                { 
+                    totalId: 'totalLivingAreaPlanned2', 
+                    dormitoryId: 'dormitoryAreaPlanned2',
+                    label: '拟建成在建'
+                }
+            ];
+
+            for (const check of livingRoomChecks) {
+                const totalElement = document.getElementById(check.totalId);
+                const dormitoryElement = document.getElementById(check.dormitoryId);
+                
+                if (totalElement && dormitoryElement) {
+                    const totalArea = parseFloat(totalElement.value) || 0;
+                    const dormitoryArea = parseFloat(dormitoryElement.value) || 0;
+                    
+                    if (totalArea < dormitoryArea) {
+                        return {
+                            valid: false,
+                            message: `"${check.label}"的各部分生活用房总面积(${totalArea.toFixed(2)}㎡)不能小于学生宿舍面积(${dormitoryArea.toFixed(2)}㎡)`,
+                            elementId: check.totalId
+                        };
+                    }
+                }
+            }
+
+            // 4. 检查特殊用房补助（排除汇总行）
+            const subsidyItems = document.querySelectorAll('#specialSubsidiesArea .subsidy-item:not(.subsidy-summary)');
+            let subsidyIndex = 0;
+            
+            for (const item of subsidyItems) {
+                subsidyIndex++;
+                const nameInput = item.querySelector('input[name="subsidyName[]"]');
+                const areaInput = item.querySelector('input[name="subsidyArea[]"]');
+                
+                if (nameInput && areaInput) {
+                    const name = nameInput.value?.trim();
+                    const areaValue = areaInput.value?.trim();
+                    const area = parseFloat(areaValue);
+                    
+                    // 检查是否填写
+                    const hasName = name && name !== '';
+                    const hasArea = areaValue && areaValue !== '' && areaValue !== '0' && areaValue !== '0.00';
+                    
+                    // 优先检查名称是否为空（只要有输入行存在就必须填写名称）
+                    if (!hasName) {
+                        return {
+                            valid: false,
+                            message: `第${subsidyIndex}个特殊用房补助的名称不能为空`,
+                            element: nameInput
+                        };
+                    }
+                    
+                    // 如果有名称但没有面积
+                    if (hasName && !hasArea) {
+                        return {
+                            valid: false,
+                            message: `第${subsidyIndex}个特殊用房补助"${name}"的建筑面积不能为空`,
+                            element: areaInput
+                        };
+                    }
+                    
+                    // 如果都填写了，检查面积是否为负数
+                    if (hasName && hasArea && area < 0) {
+                        return {
+                            valid: false,
+                            message: `特殊用房补助"${name}"的建筑面积不能为负数`,
+                            element: areaInput
+                        };
+                    }
+                }
+            }
+
+            return { valid: true };
+        }
+
+        /**
+         * 更新本次底数
+         */
+        async function updateBaseline() {
+            console.log('📢 updateBaseline 函数被调用');
+            try {
+                // 验证数据
+                const validation = validateBaselineData();
+                if (!validation.valid) {
+                    // 跳转到有问题的元素并高亮显示
+                    // 支持两种方式：通过 elementId 查找或直接使用 element
+                    const element = validation.element || document.getElementById(validation.elementId);
+                    if (element) {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        element.focus();
+                        
+                        // 添加红色边框高亮
+                        element.style.border = '2px solid red';
+                        element.style.boxShadow = '0 0 5px rgba(255, 0, 0, 0.5)';
+                        
+                        // 3秒后移除高亮
+                        setTimeout(() => {
+                            element.style.border = '';
+                            element.style.boxShadow = '';
+                        }, 3000);
+                    }
+                    
+                    showMessage(validation.message, 'error');
+                    return;
+                }
+
+                // 收集数据
+                const data = collectPageData();
+                if (!data) return;
+
+                // 确认操作
+                const confirmMsg = `确定要更新底数吗？\n\n这将覆盖您之前为"${data.schoolName}"提交的底数数据。`;
+
+                if (!confirm(confirmMsg)) {
+                    return;
+                }
+
+                // 显示加载状态
+                const updateButton = document.getElementById('updateButton');
+                const originalText = updateButton.textContent;
+                updateButton.textContent = '保存中...';
+                updateButton.disabled = true;
+
+                // 调用API
+                const response = await fetch('/api/baseline-areas/update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showMessage('底数更新成功！', 'success');
+                } else {
+                    throw new Error(result.message || '更新失败');
+                }
+
+            } catch (error) {
+                console.error('更新底数失败:', error);
+                showMessage('更新底数失败: ' + error.message, 'error');
+            } finally {
+                // 恢复按钮状态
+                const updateButton = document.getElementById('updateButton');
+                updateButton.textContent = '更新本次底数';
+                updateButton.disabled = false;
+            }
+        }
+
+        /**
+         * 安全地将值转换为带两位小数的字符串
+         * @param {*} value - 要转换的值
+         * @returns {string} - 格式化后的字符串，如 "0.00"
+         */
+        function safeToFixed(value, decimals = 2) {
+            if (value === null || value === undefined || value === '') {
+                return '0.00';
+            }
+            const num = parseFloat(value);
+            if (isNaN(num)) {
+                return '0.00';
+            }
+            return num.toFixed(decimals);
+        }
+
+        /**
+         * 恢复到上一次底数
+         */
+        async function restoreBaseline() {
+            console.log('📢 restoreBaseline 函数被调用');
+            try {
+                const schoolName = document.getElementById('schoolName').value;
+                
+                if (!schoolName) {
+                    showMessage('请先选择学校', 'warning');
+                    return;
+                }
+
+                // 确认操作
+                if (!confirm('确定要恢复到上一次保存的底数吗？\n\n当前页面的未保存修改将被丢弃。')) {
+                    return;
+                }
+
+                // 获取当前用户的底数数据
+                const user = AuthManager.getCurrentUser();
+                const username = user?.username;
+
+                if (!username) {
+                    showMessage('无法获取用户信息', 'error');
+                    return;
+                }
+
+                showMessage('正在加载底数数据...', 'info');
+
+                // 调用API获取底数
+                const response = await fetch(
+                    `/api/baseline-areas?schoolName=${encodeURIComponent(schoolName)}&submitterUsername=${encodeURIComponent(username)}`,
+                    { credentials: 'include' }
+                );
+
+                if (!response.ok) {
+                    throw new Error('获取底数数据失败');
+                }
+
+                const result = await response.json();
+
+                if (result.success && result.data && result.data.length > 0) {
+                    const baseline = result.data[0];
+                    
+                    console.log('📊 底数数据:', baseline);
+                    console.log('📊 数据类型检查:', {
+                        current_teaching_area: typeof baseline.current_teaching_area,
+                        value: baseline.current_teaching_area
+                    });
+                    
+                    // 填充数据来源
+                    const dataSourceElement = document.getElementById('dataSource');
+                    if (dataSourceElement && baseline.data_source) {
+                        dataSourceElement.value = baseline.data_source;
+                        console.log('✅ 已填充数据来源:', baseline.data_source);
+                    } else {
+                        console.warn('⚠️ 未找到数据来源元素或数据为空');
+                    }
+                    
+                    // 填充现状面积（第二个数据卡片）
+                    const currentFields = [
+                        { id: 'teachingAreaCurrent2', value: baseline.current_teaching_area },
+                        { id: 'officeAreaCurrent2', value: baseline.current_office_area },
+                        { id: 'logisticsAreaCurrent2', value: baseline.current_logistics_area },
+                        { id: 'totalLivingAreaCurrent2', value: baseline.current_living_total_area },
+                        { id: 'dormitoryAreaCurrent2', value: baseline.current_dormitory_area }
+                    ];
+                    
+                    currentFields.forEach(field => {
+                        const element = document.getElementById(field.id);
+                        if (element) {
+                            element.value = safeToFixed(field.value);
+                        } else {
+                            console.error(`❌ 未找到元素: ${field.id}`);
+                        }
+                    });
+                    
+                    // 填充拟建成前期（第一个卡片 - 没有数字后缀）
+                    const plannedFields = [
+                        { id: 'teachingAreaPlanned', value: baseline.planned_teaching_area },
+                        { id: 'officeAreaPlanned', value: baseline.planned_office_area },
+                        { id: 'logisticsAreaPlanned', value: baseline.planned_logistics_area },
+                        { id: 'totalLivingAreaPlanned', value: baseline.planned_living_total_area },
+                        { id: 'dormitoryAreaPlanned', value: baseline.planned_dormitory_area }
+                    ];
+                    
+                    plannedFields.forEach(field => {
+                        const element = document.getElementById(field.id);
+                        if (element) {
+                            element.value = safeToFixed(field.value);
+                        } else {
+                            console.error(`❌ 未找到元素: ${field.id}`);
+                        }
+                    });
+                    
+                    // 填充拟建成在建（第二个卡片 - 后缀2）
+                    const underConstructionFields = [
+                        { id: 'teachingAreaPlanned2', value: baseline.under_construction_teaching_area },
+                        { id: 'officeAreaPlanned2', value: baseline.under_construction_office_area },
+                        { id: 'logisticsAreaPlanned2', value: baseline.under_construction_logistics_area },
+                        { id: 'totalLivingAreaPlanned2', value: baseline.under_construction_living_total_area },
+                        { id: 'dormitoryAreaPlanned2', value: baseline.under_construction_dormitory_area }
+                    ];
+                    
+                    underConstructionFields.forEach(field => {
+                        const element = document.getElementById(field.id);
+                        if (element) {
+                            element.value = safeToFixed(field.value);
+                        } else {
+                            console.error(`❌ 未找到元素: ${field.id}`);
+                        }
+                    });
+                    
+                    // 触发自动计算
+                    calculateCurrentAreas2();
+                    calculatePlannedAreas1();
+                    calculatePlannedAreas2();
+                    
+                    // 加载特殊补助
+                    await loadSpecialSubsidies(schoolName, username);
+                    
+                    showMessage('已恢复到上一次保存的底数', 'success');
+                } else {
+                    showMessage('未找到已保存的底数数据', 'warning');
+                }
+
+            } catch (error) {
+                console.error('恢复底数失败:', error);
+                showMessage('恢复底数失败: ' + error.message, 'error');
+            }
+        }
+
+        /**
+         * 加载特殊补助数据
+         */
+        async function loadSpecialSubsidies(schoolName, username) {
+            try {
+                console.log('📢 loadSpecialSubsidies 被调用', { schoolName, username });
+                
+                const response = await fetch(
+                    `/api/special-subsidy-baselines?schoolName=${encodeURIComponent(schoolName)}&submitterUsername=${encodeURIComponent(username)}`,
+                    { credentials: 'include' }
+                );
+
+                if (!response.ok) {
+                    throw new Error('获取特殊补助数据失败');
+                }
+
+                const result = await response.json();
+                console.log('📊 特殊补助API返回数据:', result);
+
+                // 清空现有补助项（保留汇总行）
+                const container = document.getElementById('specialSubsidiesArea');
+                const subsidyItems = container.querySelectorAll('.subsidy-item:not(.subsidy-summary)');
+                subsidyItems.forEach(item => item.remove());
+
+                if (result.success && result.data && result.data.length > 0) {
+                    console.log(`✅ 找到 ${result.data.length} 个特殊补助项`);
+                    
+                    // 添加每个补助项
+                    result.data.forEach((subsidy, index) => {
+                        console.log(`添加第 ${index + 1} 个补助项:`, subsidy);
+                        addSubsidyArea();
+                        
+                        // 填充最后一个添加的补助项（排除汇总行）
+                        const items = container.querySelectorAll('.subsidy-item:not(.subsidy-summary)');
+                        const lastItem = items[items.length - 1];
+                        
+                        if (lastItem) {
+                            const nameInput = lastItem.querySelector('input[name="subsidyName[]"]');
+                            const areaInput = lastItem.querySelector('input[name="subsidyArea[]"]');
+                            
+                            if (nameInput) {
+                                nameInput.value = subsidy.subsidy_name || '';
+                                console.log(`  ✅ 填充名称: ${subsidy.subsidy_name}`);
+                            } else {
+                                console.error('  ❌ 未找到名称输入框');
+                            }
+                            
+                            if (areaInput) {
+                                areaInput.value = safeToFixed(subsidy.subsidy_area);
+                                console.log(`  ✅ 填充面积: ${subsidy.subsidy_area}`);
+                            } else {
+                                console.error('  ❌ 未找到面积输入框');
+                            }
+                        } else {
+                            console.error('  ❌ 未找到最后一个补助项');
+                        }
+                    });
+                    
+                    // 更新汇总
+                    updateSubsidySummaryArea();
+                } else {
+                    console.log('ℹ️ 没有找到特殊补助数据');
+                }
+
+            } catch (error) {
+                console.error('加载特殊补助失败:', error);
+                throw error;
+            }
+        }
+
+        // ==========================================
+        // 调试辅助函数
+        // ==========================================
+        
+        /**
+         * 测试按钮绑定（可在浏览器控制台调用）
+         */
+        window.testButtons = function() {
+            console.log('=== 按钮测试 ===');
+            const updateButton = document.getElementById('updateButton');
+            const restoreButton = document.getElementById('restoreButton');
+            
+            console.log('updateButton:', updateButton);
+            console.log('restoreButton:', restoreButton);
+            
+            if (updateButton) {
+                console.log('✅ 找到更新按钮，尝试手动触发点击...');
+                updateButton.click();
+            } else {
+                console.error('❌ 未找到更新按钮');
+            }
+        };
+        
+        /**
+         * 手动测试更新底数函数
+         */
+        window.testUpdateBaseline = function() {
+            console.log('手动调用 updateBaseline...');
+            updateBaseline();
+        };
+        
+        /**
+         * 手动测试恢复底数函数
+         */
+        window.testRestoreBaseline = function() {
+            console.log('手动调用 restoreBaseline...');
+            restoreBaseline();
+        };
+
+
+    </script>
+</body>
+</html>

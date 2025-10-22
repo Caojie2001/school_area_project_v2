@@ -219,8 +219,11 @@ const DataEntryManager = {
      * 设置事件监听器
      */
     setupEventListeners() {
-        // 学校选择事件已在HTML中通过onchange属性绑定
-        // 调用 updateSchoolType() -> handleSchoolChange()
+        // 学校选择事件
+        const schoolSelect = document.getElementById('schoolName');
+        if (schoolSelect) {
+            schoolSelect.addEventListener('change', () => this.updateSchoolType());
+        }
         
         // 表单提交事件
         const form = document.getElementById('onlineDataForm');
@@ -386,87 +389,6 @@ const DataEntryManager = {
     },
     
     /**
-     * 处理学校选择变更
-     */
-    handleSchoolChange() {
-        console.log('=== 学校选择已变更，开始重置表单 ===');
-        
-        const schoolNameSelect = document.getElementById('schoolName');
-        if (!schoolNameSelect) {
-            console.warn('找不到学校选择器元素');
-            return;
-        }
-        
-        const selectedSchool = schoolNameSelect.value;
-        console.log('选择的学校:', selectedSchool);
-        
-        // 如果没有选择学校，只更新学校类型显示
-        if (!selectedSchool) {
-            console.log('未选择学校，只更新学校类型');
-            this.updateSchoolType();
-            return;
-        }
-        
-        // 保存当前选择的学校
-        const savedSchool = selectedSchool;
-        console.log('开始重置表单，保留学校:', savedSchool);
-        
-        // 重置所有数字输入字段
-        const inputs = document.querySelectorAll('#page-data-entry input[type="number"]');
-        inputs.forEach(input => {
-            input.value = '0';
-        });
-        
-        // 恢复学校选择（不重置学校选择器本身）
-        schoolNameSelect.value = savedSchool;
-        
-        // 重置年份选择
-        const yearInput = document.getElementById('year');
-        if (yearInput) {
-            yearInput.value = '2025';
-        }
-        
-        // 重置备注字段
-        const remarksField = document.getElementById('remarks');
-        if (remarksField) {
-            remarksField.value = '';
-        }
-        
-        // 清空特殊补助
-        const specialSubsidiesContainer = document.getElementById('specialSubsidies');
-        if (specialSubsidiesContainer) {
-            specialSubsidiesContainer.innerHTML = '';
-        }
-        
-        // 清空分析结果区域
-        this.clearAnalysisResults();
-        
-        // 重新计算所有字段
-        this.calculateTotalStudents();
-        this.calculateTotalBuildingArea();
-        this.calculateOtherLivingArea();
-        
-        // 清除所有错误状态
-        const errorInputs = document.querySelectorAll('.form-control.error');
-        errorInputs.forEach(input => {
-            this.clearFieldError(input);
-        });
-        
-        // 更新学校类型显示
-        this.updateSchoolType();
-        
-        // 更新按钮状态
-        this.updateCalculateButtonState();
-        
-        // 重置编辑模式（切换学校时，结束编辑模式）
-        if (typeof AutoRefreshManager !== 'undefined') {
-            AutoRefreshManager.setEditMode(false);
-        }
-        
-        console.log('表单已重置，保留学校:', savedSchool);
-    },
-    
-    /**
      * 更新学校类型显示
      */
     async updateSchoolType() {
@@ -487,13 +409,13 @@ const DataEntryManager = {
             const data = await DataEntryAPI.getSchoolType(selectedSchool);
             
             if (data.success) {
-                schoolTypeDisplay.textContent = `学校类型: ${data.schoolType}`;
+                schoolTypeDisplay.textContent = `院校类别: ${data.schoolType}`;
             } else {
-                schoolTypeDisplay.textContent = '学校类型: 未指定';
+                schoolTypeDisplay.textContent = '院校类别: 未指定';
             }
         } catch (error) {
             console.error('获取学校类型失败:', error);
-            schoolTypeDisplay.textContent = '学校类型: 获取失败';
+            schoolTypeDisplay.textContent = '院校类别: 获取失败';
         }
     },
     
@@ -2085,11 +2007,9 @@ function calculateOtherLivingArea() {
 
 /**
  * 更新学校类型（兼容性）
- * 现在调用 handleSchoolChange 来同时重置表单
  */
 function updateSchoolType() {
-    console.log('全局 updateSchoolType 被调用，转发到 handleSchoolChange');
-    return DataEntryManager.handleSchoolChange();
+    return DataEntryManager.updateSchoolType();
 }
 
 /**

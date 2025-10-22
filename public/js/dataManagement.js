@@ -59,7 +59,7 @@ const DataManagementManager = {
                 summarySection.style.display = 'none';
             }
             
-            await this.loadDataAvailableYears(true); // 禁用缓存
+            await this.loadStudentPlanningParams(true); // 禁用缓存，加载学生规划参数
             await this.loadDataAvailableUsers(true); // 禁用缓存
             await this.loadSchoolOptions(true); // 禁用缓存
             
@@ -91,7 +91,7 @@ const DataManagementManager = {
             console.log('开始刷新历史测算页面数据（禁用缓存）...');
             
             // 强制刷新所有筛选器数据，禁用缓存
-            await this.loadDataAvailableYears(true);
+            await this.loadStudentPlanningParams(true); // 加载学生规划参数
             await this.loadDataAvailableUsers(true);
             await this.loadSchoolOptions(true);
             
@@ -123,58 +123,79 @@ const DataManagementManager = {
         
         console.log('锁定学校用户筛选器，用户信息:', currentUser);
         
-        // 锁定学校筛选器
+        // 锁定学校筛选器（自定义单选框）
         const schoolFilter = document.getElementById('dataSchoolNameFilter');
-        if (schoolFilter && currentUser.school_name) {
-            // 清空所有选项，只保留当前学校
-            schoolFilter.innerHTML = '';
-            const option = document.createElement('option');
-            option.value = currentUser.school_name;
-            option.textContent = currentUser.school_name;
-            option.selected = true;
-            schoolFilter.appendChild(option);
+        const schoolDropdownList = document.getElementById('schoolDropdownList');
+        if (schoolFilter && schoolDropdownList && currentUser.school_name) {
+            // 清空下拉列表，只保留当前学校
+            schoolDropdownList.innerHTML = '';
             
-            // 禁用筛选器，防止学校用户修改
-            schoolFilter.disabled = true;
-            // 添加样式提示这是被锁定的
-            schoolFilter.style.backgroundColor = '#f5f5f5';
-            schoolFilter.style.cursor = 'not-allowed';
-            schoolFilter.style.opacity = '0.8';
+            const optionItem = document.createElement('div');
+            optionItem.className = 'option-item selected';
+            optionItem.textContent = currentUser.school_name;
+            optionItem.setAttribute('data-value', currentUser.school_name);
             
-            // 显示锁定提示
-            const schoolHint = document.getElementById('schoolFilterLockHint');
-            if (schoolHint) {
-                schoolHint.style.display = 'inline';
+            schoolDropdownList.appendChild(optionItem);
+            
+            // 更新显示文本
+            const selectDisplay = schoolFilter.querySelector('.select-display');
+            if (selectDisplay) {
+                // 使用与用户筛选器一致的HTML结构
+                selectDisplay.innerHTML = '<span class="display-text">' + currentUser.school_name + '</span>';
+                selectDisplay.setAttribute('data-value', currentUser.school_name);
+                
+                // 设置锁定样式（保持外观一致，只改变底色和禁用交互）
+                selectDisplay.style.backgroundColor = '#f5f5f5';
+                selectDisplay.style.cursor = 'not-allowed';
+                selectDisplay.style.pointerEvents = 'none';
+                selectDisplay.onclick = null; // 移除点击事件
             }
             
             console.log('学校筛选器已锁定为:', currentUser.school_name);
         }
         
-        // 锁定用户筛选器
-        const userFilter = document.getElementById('dataUserFilter');
-        if (userFilter) {
+        // 锁定用户筛选器（多选框）
+        const userMultiSelect = document.getElementById('dataUserFilter');
+        const userDropdownList = document.getElementById('userDropdownList');
+        if (userMultiSelect && userDropdownList) {
             const userName = currentUser.real_name || currentUser.username;
             
-            // 清空所有选项，只保留当前用户
-            userFilter.innerHTML = '';
-            const option = document.createElement('option');
-            option.value = userName;
-            option.textContent = userName;
-            option.selected = true;
-            userFilter.appendChild(option);
+            // 清空下拉列表，只保留当前用户
+            userDropdownList.innerHTML = '';
             
-            // 禁用筛选器，防止学校用户修改
-            userFilter.disabled = true;
-            // 添加样式提示这是被锁定的
-            userFilter.style.backgroundColor = '#f5f5f5';
-            userFilter.style.cursor = 'not-allowed';
-            userFilter.style.opacity = '0.8';
+            const optionItem = document.createElement('div');
+            optionItem.className = 'option-item';
             
-            // 显示锁定提示
-            const userHint = document.getElementById('userFilterLockHint');
-            if (userHint) {
-                userHint.style.display = 'inline';
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = userName;
+            checkbox.checked = true;
+            checkbox.disabled = true; // 禁用复选框
+            
+            const span = document.createElement('span');
+            span.textContent = userName;
+            
+            optionItem.appendChild(checkbox);
+            optionItem.appendChild(span);
+            userDropdownList.appendChild(optionItem);
+            
+            // 禁用多选框，防止学校用户修改（保持外观一致，只改变底色和禁用交互）
+            const selectDisplay = userMultiSelect.querySelector('.select-display');
+            if (selectDisplay) {
+                selectDisplay.style.backgroundColor = '#f5f5f5';
+                selectDisplay.style.cursor = 'not-allowed';
+                selectDisplay.style.pointerEvents = 'none';
+                selectDisplay.onclick = null; // 移除点击事件
             }
+            
+            // 更新显示
+            setTimeout(() => {
+                if (typeof window.updateUserDisplay === 'function') {
+                    window.updateUserDisplay();
+                } else {
+                    this.updateUserFilterDisplay();
+                }
+            }, 50);
             
             console.log('用户筛选器已锁定为:', userName);
         }
@@ -190,15 +211,45 @@ const DataManagementManager = {
             return;
         }
         
-        const yearFilter = document.getElementById('dataYearFilter');
-        const schoolFilter = document.getElementById('dataSchoolNameFilter');
-        const userFilter = document.getElementById('dataUserFilter');
-        const searchButton = document.querySelector('button[onclick="searchDataRecords()"]');
-        const year = yearFilter ? yearFilter.value : 'all';
-        const school = schoolFilter ? schoolFilter.value : 'all';
-        const user = userFilter ? userFilter.value : 'all';
+        // 从级联选择器获取学生规划参数
+        const studentPlanDisplay = document.querySelector('#dataStudentPlanFilter .select-display');
+        const studentPlanId = studentPlanDisplay ? studentPlanDisplay.getAttribute('data-selected-id') : null;
+        const selectedYear = studentPlanDisplay ? studentPlanDisplay.getAttribute('data-selected-year') : null;
+        const selectedCriteria = studentPlanDisplay ? studentPlanDisplay.getAttribute('data-selected-type') : null;
         
-        console.log('开始搜索数据记录，筛选条件:', { year, school, user });
+        // 如果选择了具体的学生规划参数，使用该年份；否则查询所有年份
+        const year = selectedYear || 'all';
+        
+        console.log('学生规划参数筛选:', { 
+            studentPlanId, 
+            selectedYear, 
+            selectedCriteria 
+        });
+        
+        // 从自定义单选框获取学校值
+        const schoolDisplay = document.querySelector('#dataSchoolNameFilter .select-display');
+        const school = schoolDisplay ? (schoolDisplay.getAttribute('data-value') || 'all') : 'all';
+        
+        const searchButton = document.querySelector('button[onclick="searchDataRecords()"]');
+        
+        // 获取选中的用户
+        const userCheckboxes = document.querySelectorAll('#userDropdownList input[type="checkbox"]:checked');
+        const selectedUsers = Array.from(userCheckboxes).map(cb => cb.value);
+        const allCheckboxes = document.querySelectorAll('#userDropdownList input[type="checkbox"]');
+        
+        // 如果所有用户都被选中或没有选中任何用户，则使用 'all'
+        let user = 'all';
+        if (selectedUsers.length > 0 && selectedUsers.length < allCheckboxes.length) {
+            user = selectedUsers; // 传递数组
+        }
+        
+        console.log('开始搜索数据记录，筛选条件:', { 
+            year, 
+            school, 
+            user, 
+            studentPlanId,
+            calculationCriteria: selectedCriteria
+        });
         
         // 设置搜索状态
         this.isSearching = true;
@@ -223,7 +274,8 @@ const DataManagementManager = {
             const result = await DataManagementAPI.searchSchoolsLatest({
                 year: year,
                 school: school,
-                user: user
+                user: user,
+                calculationCriteria: selectedCriteria // 传递测算口径
             });
             
             console.log('搜索API响应:', result);
@@ -257,18 +309,40 @@ const DataManagementManager = {
      * 锁定数据管理页面
      */
     lockDataManagementPage() {
-        // 禁用所有筛选下拉框
-        const filters = [
-            document.getElementById('dataYearFilter'),
-            document.getElementById('dataSchoolNameFilter'),
-            document.getElementById('dataUserFilter')
-        ];
-        filters.forEach(filter => {
-            if (filter) {
-                filter.disabled = true;
-                filter.style.opacity = '0.6';
+        // 禁用筛选下拉框
+        const studentPlanFilter = document.getElementById('dataStudentPlanFilter');
+        const schoolFilter = document.getElementById('dataSchoolNameFilter');
+        const userFilter = document.getElementById('dataUserFilter');
+        
+        // 禁用学生规划参数筛选器
+        if (studentPlanFilter) {
+            const selectDisplay = studentPlanFilter.querySelector('.select-display');
+            if (selectDisplay) {
+                selectDisplay.style.opacity = '0.6';
+                selectDisplay.style.pointerEvents = 'none';
             }
-        });
+        }
+        
+        // 禁用学校筛选器
+        if (schoolFilter) {
+            const selectDisplay = schoolFilter.querySelector('.select-display');
+            if (selectDisplay) {
+                selectDisplay.style.opacity = '0.6';
+                selectDisplay.style.pointerEvents = 'none';
+            }
+        }
+        
+        // 禁用用户多选框
+        if (userFilter) {
+            const selectDisplay = userFilter.querySelector('.select-display');
+            if (selectDisplay) {
+                selectDisplay.style.opacity = '0.6';
+                selectDisplay.style.pointerEvents = 'none';
+                const originalOnclick = selectDisplay.onclick;
+                selectDisplay.setAttribute('data-original-onclick', 'saved');
+                selectDisplay.onclick = null;
+            }
+        }
         
         // 禁用搜索和批量下载按钮
         const searchButton = document.querySelector('button[onclick="searchDataRecords()"]');
@@ -315,64 +389,76 @@ const DataManagementManager = {
      */
     unlockDataManagementPage() {
         // 启用所有筛选下拉框，但保持学校用户的限制
-        const yearFilter = document.getElementById('dataYearFilter');
+        const studentPlanFilter = document.getElementById('dataStudentPlanFilter');
         const schoolFilter = document.getElementById('dataSchoolNameFilter');
         const userFilter = document.getElementById('dataUserFilter');
+        const schoolDropdownList = document.getElementById('schoolDropdownList');
+        const userDropdownList = document.getElementById('userDropdownList');
         
-        // 年份筛选器始终启用
-        if (yearFilter) {
-            yearFilter.disabled = false;
-            yearFilter.style.opacity = '1';
+        // 学生规划参数筛选器始终启用
+        if (studentPlanFilter) {
+            const selectDisplay = studentPlanFilter.querySelector('.select-display');
+            if (selectDisplay) {
+                selectDisplay.style.opacity = '1';
+                selectDisplay.style.pointerEvents = 'auto';
+            }
         }
         
         // 学校和用户筛选器：如果是学校用户则保持锁定
         if (currentUser && currentUser.role === 'school') {
             // 学校用户的学校和用户筛选器保持锁定状态
             if (schoolFilter) {
-                schoolFilter.disabled = true;
-                schoolFilter.style.backgroundColor = '#f5f5f5';
-                schoolFilter.style.cursor = 'not-allowed';
-                schoolFilter.style.opacity = '0.8';
-                // 显示锁定提示
-                const schoolHint = document.getElementById('schoolFilterLockHint');
-                if (schoolHint) schoolHint.style.display = 'inline';
+                const selectDisplay = schoolFilter.querySelector('.select-display');
+                if (selectDisplay) {
+                    selectDisplay.style.backgroundColor = '#f5f5f5';
+                    selectDisplay.style.cursor = 'not-allowed';
+                    selectDisplay.style.pointerEvents = 'none';
+                    selectDisplay.onclick = null;
+                }
             }
             if (userFilter) {
-                userFilter.disabled = true;
-                userFilter.style.backgroundColor = '#f5f5f5';
-                userFilter.style.cursor = 'not-allowed';
-                userFilter.style.opacity = '0.8';
-                // 显示锁定提示
-                const userHint = document.getElementById('userFilterLockHint');
-                if (userHint) userHint.style.display = 'inline';
+                const selectDisplay = userFilter.querySelector('.select-display');
+                
+                if (selectDisplay) {
+                    selectDisplay.style.backgroundColor = '#f5f5f5';
+                    selectDisplay.style.cursor = 'not-allowed';
+                    selectDisplay.style.pointerEvents = 'none';
+                    selectDisplay.onclick = null;
+                }
             }
         } else {
             // 管理员和建设中心用户可以自由选择，需要重新加载完整选项
             if (schoolFilter) {
-                schoolFilter.disabled = false;
-                schoolFilter.style.opacity = '1';
-                schoolFilter.style.backgroundColor = '';
-                schoolFilter.style.cursor = '';
-                // 隐藏锁定提示
-                const schoolHint = document.getElementById('schoolFilterLockHint');
-                if (schoolHint) schoolHint.style.display = 'none';
+                const selectDisplay = schoolFilter.querySelector('.select-display');
+                if (selectDisplay) {
+                    selectDisplay.style.opacity = '1';
+                    selectDisplay.style.backgroundColor = '';
+                    selectDisplay.style.cursor = 'pointer';
+                    selectDisplay.style.pointerEvents = 'auto';
+                }
                 
-                // 重新加载学校选项（如果需要）
-                if (schoolFilter.options.length <= 1) {
+                // 重新加载学校选项（如果需要且列表为空）
+                if (schoolDropdownList && schoolDropdownList.children.length === 0) {
                     this.loadSchoolOptions();
                 }
             }
             if (userFilter) {
-                userFilter.disabled = false;
-                userFilter.style.opacity = '1';
-                userFilter.style.backgroundColor = '';
-                userFilter.style.cursor = '';
-                // 隐藏锁定提示
-                const userHint = document.getElementById('userFilterLockHint');
-                if (userHint) userHint.style.display = 'none';
+                const selectDisplay = userFilter.querySelector('.select-display');
                 
-                // 重新加载用户选项（如果需要）
-                if (userFilter.options.length <= 1) {
+                if (selectDisplay) {
+                    selectDisplay.style.opacity = '1';
+                    selectDisplay.style.backgroundColor = '';
+                    selectDisplay.style.cursor = 'pointer';
+                    selectDisplay.style.pointerEvents = 'auto';
+                    selectDisplay.onclick = function() { 
+                        if (typeof window.toggleUserDropdown === 'function') {
+                            window.toggleUserDropdown();
+                        }
+                    };
+                }
+                
+                // 重新加载用户选项（如果需要且列表为空）
+                if (userDropdownList && userDropdownList.children.length === 0) {
                     this.loadDataAvailableUsers();
                 }
             }
@@ -513,20 +599,130 @@ const DataManagementManager = {
             const result = await CommonAPI.getYears(disableCache ? { useCache: false } : {});
             
             if (result.success) {
-                const yearSelect = document.getElementById('dataYearFilter');
-                if (yearSelect) {
-                    yearSelect.innerHTML = '<option value="all">所有测算年份</option>';
+                const yearDropdownList = document.getElementById('yearDropdownList');
+                const yearDisplay = document.querySelector('#dataYearFilter .select-display');
+                
+                if (yearDropdownList) {
+                    yearDropdownList.innerHTML = '';
                     
+                    // 添加"所有测算年份"选项
+                    const allOption = document.createElement('div');
+                    allOption.className = 'option-item selected';
+                    allOption.textContent = '所有测算年份';
+                    allOption.onclick = function() { 
+                        if (typeof window.selectYearOption === 'function') {
+                            window.selectYearOption('all', '所有测算年份');
+                        }
+                    };
+                    yearDropdownList.appendChild(allOption);
+                    
+                    // 添加具体年份选项
                     result.data.forEach(year => {
-                        const option = document.createElement('option');
-                        option.value = year;
-                        option.textContent = year + '年';
-                        yearSelect.appendChild(option);
+                        const optionItem = document.createElement('div');
+                        optionItem.className = 'option-item';
+                        optionItem.textContent = year + '年';
+                        optionItem.onclick = function() { 
+                            if (typeof window.selectYearOption === 'function') {
+                                window.selectYearOption(year, year + '年');
+                            }
+                        };
+                        yearDropdownList.appendChild(optionItem);
                     });
+                }
+                
+                // 设置默认显示为"所有测算年份"
+                if (yearDisplay) {
+                    yearDisplay.innerHTML = '<span class="display-text">所有测算年份</span>';
+                    yearDisplay.setAttribute('data-value', 'all');
                 }
             }
         } catch (error) {
             console.error('加载年份失败:', error);
+        }
+    },
+    
+    /**
+     * 加载学生规划参数
+     */
+    async loadStudentPlanningParams(disableCache = false) {
+        try {
+            console.log('📥 开始加载学生规划参数...');
+            const result = await CommonAPI.getStudentPlanningParams(disableCache ? { useCache: false } : {});
+            
+            console.log('📦 API返回结果:', result);
+            
+            if (result.success && result.data) {
+                const yearList = document.getElementById('studentPlanYearList');
+                const typeList = document.getElementById('studentPlanTypeList');
+                const display = document.querySelector('#dataStudentPlanFilter .select-display');
+                
+                if (yearList && typeList && display) {
+                    // 清空列表
+                    yearList.innerHTML = '';
+                    typeList.innerHTML = '';
+                    
+                    console.log(`✅ 加载到 ${result.data.length} 个年份分组`);
+                    
+                    if (result.data.length === 0) {
+                        // 无数据时显示提示
+                        yearList.innerHTML = '<div style="padding: 8px; color: #999; text-align: center;">暂无数据</div>';
+                        const displayText = display.querySelector('.display-text');
+                        if (displayText) {
+                            displayText.textContent = '所有学生规划参数';
+                        }
+                        display.removeAttribute('data-selected-id');
+                        display.removeAttribute('data-selected-year');
+                        display.removeAttribute('data-selected-type');
+                    } else {
+                        // 添加年份选项
+                        result.data.forEach((yearData, index) => {
+                            const yearItem = document.createElement('div');
+                            yearItem.className = 'year-item' + (index === 0 ? ' active' : '');
+                            yearItem.textContent = yearData.year + '年';
+                            yearItem.setAttribute('data-year', yearData.year);
+                            yearItem.onclick = function() {
+                                if (typeof window.selectStudentPlanYear === 'function') {
+                                    // 传递 items 数组而不是整个 yearData
+                                    window.selectStudentPlanYear(yearData.year, yearData.items);
+                                }
+                            };
+                            yearList.appendChild(yearItem);
+                        });
+                        
+                        // 默认显示第一个年份的类型
+                        if (result.data[0] && result.data[0].items) {
+                            result.data[0].items.forEach(item => {
+                                const typeItem = document.createElement('div');
+                                typeItem.className = 'type-item';
+                                typeItem.textContent = item.calculation_criteria || '默认口径';
+                                typeItem.setAttribute('data-id', item.id);
+                                typeItem.setAttribute('data-year', result.data[0].year);
+                                typeItem.setAttribute('data-type', item.calculation_criteria || '默认口径');
+                                typeItem.setAttribute('data-school', item.school_name || '');
+                                typeItem.onclick = function() {
+                                    if (typeof window.selectStudentPlanType === 'function') {
+                                        window.selectStudentPlanType(typeItem);
+                                    }
+                                };
+                                typeList.appendChild(typeItem);
+                            });
+                        }
+                        
+                        // 设置默认显示
+                        const displayText = display.querySelector('.display-text');
+                        if (displayText) {
+                            displayText.textContent = '所有学生规划参数';
+                        }
+                        display.removeAttribute('data-selected-id');
+                        display.removeAttribute('data-selected-year');
+                        display.removeAttribute('data-selected-type');
+                    }
+                }
+            } else {
+                console.error('❌ 加载学生规划参数失败:', result);
+            }
+        } catch (error) {
+            console.error('❌ 加载学生规划参数异常:', error);
         }
     },
     
@@ -538,17 +734,41 @@ const DataManagementManager = {
             const result = await DataEntryAPI.getSchools(disableCache ? { useCache: false } : {});
             
             if (result.success && result.schools) {
-                const schoolSelect = document.getElementById('dataSchoolNameFilter');
-                if (schoolSelect) {
-                    // 保留第一个"所有学校"选项
-                    schoolSelect.innerHTML = '<option value="all">所有学校</option>';
+                const schoolDropdownList = document.getElementById('schoolDropdownList');
+                const schoolDisplay = document.querySelector('#dataSchoolNameFilter .select-display');
+                
+                if (schoolDropdownList) {
+                    schoolDropdownList.innerHTML = '';
                     
+                    // 添加"所有学校"选项
+                    const allOption = document.createElement('div');
+                    allOption.className = 'option-item selected';
+                    allOption.textContent = '所有学校';
+                    allOption.onclick = function() { 
+                        if (typeof window.selectSchoolOption === 'function') {
+                            window.selectSchoolOption('all', '所有学校');
+                        }
+                    };
+                    schoolDropdownList.appendChild(allOption);
+                    
+                    // 添加具体学校选项
                     result.schools.forEach(school => {
-                        const option = document.createElement('option');
-                        option.value = school.school_name;
-                        option.textContent = school.school_name;
-                        schoolSelect.appendChild(option);
+                        const optionItem = document.createElement('div');
+                        optionItem.className = 'option-item';
+                        optionItem.textContent = school.school_name;
+                        optionItem.onclick = function() { 
+                            if (typeof window.selectSchoolOption === 'function') {
+                                window.selectSchoolOption(school.school_name, school.school_name);
+                            }
+                        };
+                        schoolDropdownList.appendChild(optionItem);
                     });
+                }
+                
+                // 设置默认显示为"所有学校"
+                if (schoolDisplay) {
+                    schoolDisplay.innerHTML = '<span class="display-text">所有学校</span>';
+                    schoolDisplay.setAttribute('data-value', 'all');
                 }
             }
         } catch (error) {
@@ -561,25 +781,105 @@ const DataManagementManager = {
      */
     async loadDataAvailableUsers(disableCache = false) {
         try {
+            console.log('🔄 开始加载测算用户列表...');
             const result = await CommonAPI.getUsers(disableCache ? { useCache: false } : {});
             
+            console.log('📥 用户API响应:', result);
+            
             if (result.success) {
-                const userSelect = document.getElementById('dataUserFilter');
-                if (userSelect) {
-                    userSelect.innerHTML = '<option value="all">所有测算用户</option>';
+                // 等待DOM元素准备好
+                let userDropdownList = document.getElementById('userDropdownList');
+                let retryCount = 0;
+                const maxRetries = 10;
+                
+                while (!userDropdownList && retryCount < maxRetries) {
+                    console.log(`⏳ 等待userDropdownList元素准备好... (尝试 ${retryCount + 1}/${maxRetries})`);
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    userDropdownList = document.getElementById('userDropdownList');
+                    retryCount++;
+                }
+                
+                console.log('📋 用户下拉列表元素:', userDropdownList);
+                
+                if (userDropdownList) {
+                    userDropdownList.innerHTML = '';
+                    
+                    console.log('👥 用户数据:', result.data);
                     
                     result.data.forEach(user => {
-                        const option = document.createElement('option');
-                        // 使用真实姓名作为value进行筛选
-                        option.value = user.real_name || user.username || user;
-                        // 只显示真实姓名，不显示用户名
-                        option.textContent = user.real_name || user.username || user;
-                        userSelect.appendChild(option);
+                        const optionItem = document.createElement('div');
+                        optionItem.className = 'option-item';
+                        optionItem.onclick = function() { 
+                            if (typeof window.toggleUserOption === 'function') {
+                                window.toggleUserOption(this);
+                            }
+                        };
+                        
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.value = user.real_name || user.username || user;
+                        checkbox.checked = true; // 默认全选
+                        
+                        const span = document.createElement('span');
+                        span.textContent = user.real_name || user.username || user;
+                        
+                        optionItem.appendChild(checkbox);
+                        optionItem.appendChild(span);
+                        userDropdownList.appendChild(optionItem);
+                        
+                        console.log('✅ 添加用户选项:', user.real_name || user.username);
                     });
+                    
+                    console.log('📊 用户选项总数:', userDropdownList.children.length);
+                    
+                    // 初始化显示
+                    setTimeout(() => {
+                        console.log('🔄 准备更新用户显示...');
+                        if (typeof window.updateUserDisplay === 'function') {
+                            console.log('✅ 使用全局updateUserDisplay函数');
+                            window.updateUserDisplay();
+                        } else {
+                            console.log('⚠️ 使用内部updateUserFilterDisplay方法');
+                            this.updateUserFilterDisplay();
+                        }
+                    }, 50);
+                } else {
+                    console.error('❌ userDropdownList 元素未找到，无法加载用户选项');
                 }
             }
         } catch (error) {
-            console.error('加载测算用户失败:', error);
+            console.error('❌ 加载测算用户失败:', error);
+        }
+    },
+    
+    /**
+     * 更新用户筛选器显示（内部方法）
+     */
+    updateUserFilterDisplay() {
+        const display = document.querySelector('#dataUserFilter .select-display');
+        const checkboxes = document.querySelectorAll('#userDropdownList input[type="checkbox"]');
+        
+        if (!display || !checkboxes.length) return;
+        
+        const selectedUsers = Array.from(checkboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+
+        // 清空显示区域
+        display.innerHTML = '';
+
+        if (selectedUsers.length === 0) {
+            // 未选择任何用户
+            display.innerHTML = '<span class="display-text">请选择测算用户</span>';
+        } else if (selectedUsers.length === 1) {
+            // 只选择了一个用户，显示用户名（优先于"所有"判断）
+            display.innerHTML = '<span class="display-text">' + selectedUsers[0] + '</span>';
+        } else if (selectedUsers.length === checkboxes.length) {
+            // 选择了全部用户
+            display.innerHTML = '<span class="display-text">所有测算用户</span>';
+        } else {
+            // 选择了部分用户
+            display.innerHTML = '<span class="display-text">部分测算用户</span>';
         }
     },
     
@@ -587,9 +887,50 @@ const DataManagementManager = {
      * 清空筛选
      */
     clearDataFilter() {
-        document.getElementById('dataYearFilter').value = 'all';
-        document.getElementById('dataSchoolNameFilter').value = 'all';
-        document.getElementById('dataUserFilter').value = 'all';
+        // 重置学生规划参数筛选器
+        const studentPlanDisplay = document.querySelector('#dataStudentPlanFilter .select-display');
+        if (studentPlanDisplay) {
+            const displayText = studentPlanDisplay.querySelector('.display-text');
+            if (displayText) {
+                displayText.textContent = '所有学生规划参数';
+            }
+            studentPlanDisplay.removeAttribute('data-selected-id');
+            studentPlanDisplay.removeAttribute('data-selected-year');
+            studentPlanDisplay.removeAttribute('data-selected-type');
+        }
+        // 移除所有年份和类型项的选中状态
+        const yearItems = document.querySelectorAll('#studentPlanYearList .year-item');
+        yearItems.forEach(item => {
+            item.classList.remove('active', 'selected');
+        });
+        const typeItems = document.querySelectorAll('#studentPlanTypeList .type-item');
+        typeItems.forEach(item => {
+            item.classList.remove('selected');
+        });
+        
+        // 重置学校筛选器
+        const schoolDisplay = document.querySelector('#dataSchoolNameFilter .select-display');
+        if (schoolDisplay) {
+            schoolDisplay.innerHTML = '<span class="display-text">所有学校</span>';
+            schoolDisplay.setAttribute('data-value', 'all');
+        }
+        const schoolOptions = document.querySelectorAll('#schoolDropdownList .option-item');
+        schoolOptions.forEach((opt, index) => {
+            if (index === 0) {
+                opt.classList.add('selected');
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+        
+        // 重置用户多选框为全选
+        const userCheckboxes = document.querySelectorAll('#userDropdownList input[type="checkbox"]');
+        userCheckboxes.forEach(cb => cb.checked = true);
+        if (typeof window.updateUserDisplay === 'function') {
+            window.updateUserDisplay();
+        } else {
+            this.updateUserFilterDisplay();
+        }
         
         // 重置分页
         this.currentPage = 1;
@@ -658,18 +999,19 @@ const DataManagementManager = {
         html += '<div class="table-responsive" style="overflow-x: auto; overflow-y: hidden; width: 100%;">';
         
         // 单一普通表格
-        html += '<table class="data-table" style="width: 100%; min-width: 1000px; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">';
+        html += '<table class="data-table" style="width: 100%; min-width: 1200px; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">';
         html += '<thead style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">';
         html += '<tr>';
-        html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; border-right: 1px solid #dee2e6; font-size: 12px;">测算年份</th>';
-        html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; border-right: 1px solid #dee2e6; font-size: 12px; width: 120px;">学校名称</th>';
-        html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; border-right: 1px solid #dee2e6; font-size: 12px; line-height: 1.2; width: 110px;">现状建筑总面积<br/>(m²)</th>';
-        html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; border-right: 1px solid #dee2e6; font-size: 12px; line-height: 1.2; width: 110px;">测算建筑总面积<br/>(m²)</th>';
-        html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; border-right: 1px solid #dee2e6; font-size: 12px; line-height: 1.2;">测算建筑面积总缺额<br/>(不含特殊补助)(m²)</th>';
-        html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; border-right: 1px solid #dee2e6; font-size: 12px; line-height: 1.2; width: 130px;">特殊补助建筑总面积<br/>(m²)</th>';
-        html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; border-right: 1px solid #dee2e6; font-size: 12px; line-height: 1.2;">测算建筑面积总缺额<br/>(含特殊补助)(m²)</th>';
-        html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; border-right: 1px solid #dee2e6; font-size: 12px; width: 120px;">测算用户</th>';
-        html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; font-size: 12px; width: 180px;">操作</th>';
+        html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; border-right: 1px solid #dee2e6; font-size: 12px; width: 80px;">规划年度</th>';
+        html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; border-right: 1px solid #dee2e6; font-size: 12px; width: 150px;">单位/学校(机构)名称(章)</th>';
+        html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; border-right: 1px solid #dee2e6; font-size: 12px; width: 90px;">院校类别</th>';
+        html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; border-right: 1px solid #dee2e6; font-size: 12px; width: 110px;">学生总人数<br/>(人)</th>';
+        html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; border-right: 1px solid #dee2e6; font-size: 12px; line-height: 1.2; width: 140px;">建筑总面积(㎡)_缺额<br/>不含特殊补助</th>';
+        html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; border-right: 1px solid #dee2e6; font-size: 12px; line-height: 1.2; width: 140px;">建筑总面积(㎡)_缺额<br/>含特殊补助</th>';
+        html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; border-right: 1px solid #dee2e6; font-size: 12px; width: 100px;">学生数测算口径</th>';
+        html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; border-right: 1px solid #dee2e6; font-size: 12px; width: 130px;">测算时间</th>';
+        html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; border-right: 1px solid #dee2e6; font-size: 12px; width: 100px;">测算用户</th>';
+        html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; font-size: 12px; width: 120px;">操作</th>';
         html += '</tr></thead>';
         html += '<tbody>';
         
@@ -688,20 +1030,45 @@ const DataManagementManager = {
             const userName = school.submitter_real_name || school.submitter_username || '未知用户';
             const userNameTitle = userName.length >= 8 ? `title="${userName}"` : '';
             
+            // 获取院校类别
+            const schoolType = school.school_type || '未知';
+            
+            // 获取学生总人数
+            const totalStudents = school.total_students || 0;
+            
+            // 获取学生数测算口径
+            const populationScope = school.population_calculation_scope || '未知';
+            
+            // 格式化测算时间
+            const calculationTime = school.created_at ? new Date(school.created_at).toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            }) : '未知';
+
+            const safeEscape = typeof escapeHtml === 'function' ? escapeHtml : (value => (value ?? ''));
+            const deleteAttrs = [
+                `data-id="${school.id}"`,
+                `data-school="${safeEscape(schoolName)}"`,
+                `data-year="${school.year || ''}"`,
+                `data-user="${safeEscape(school.submitter_username || '')}"`
+            ].join(' ');
+            
             html += `<tr style="${rowStyle} border-bottom: 1px solid #dee2e6;" onmouseover="this.style.background='#e3f2fd'" onmouseout="this.style.background='${index % 2 === 0 ? '#fff' : '#f8f9fa'}'">
                 <td style="padding: 6px 7px; border-right: 1px solid #dee2e6; font-weight: 600; font-size: 12px; text-align: center;">${school.year || '未知'}</td>
-                <td style="padding: 6px 7px; border-right: 1px solid #dee2e6; font-weight: 600; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; text-align: center;" ${schoolNameTitle}>${schoolName}</td>
-                <td style="padding: 6px 7px; border-right: 1px solid #dee2e6; text-align: center; font-size: 12px;">${school.current_building_area || '0.00'}</td>
-                <td style="padding: 6px 7px; border-right: 1px solid #dee2e6; text-align: center; font-size: 12px;">${school.required_building_area || '0.00'}</td>
+                <td style="padding: 6px 7px; border-right: 1px solid #dee2e6; font-weight: 600; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; text-align: center;" ${schoolNameTitle}>${schoolName}</td>
+                <td style="padding: 6px 7px; border-right: 1px solid #dee2e6; text-align: center; font-size: 12px;">${schoolType}</td>
+                <td style="padding: 6px 7px; border-right: 1px solid #dee2e6; text-align: center; font-size: 12px;">${totalStudents}</td>
                 <td style="padding: 6px 7px; border-right: 1px solid #dee2e6; text-align: center; font-size: 12px;">${gapWithoutSubsidy.toFixed ? gapWithoutSubsidy.toFixed(2) : '0.00'}</td>
-                <td style="padding: 6px 7px; border-right: 1px solid #dee2e6; text-align: center; font-size: 12px;">${school.special_subsidy_total || '0.00'}</td>
                 <td style="padding: 6px 7px; border-right: 1px solid #dee2e6; text-align: center; font-size: 12px;">${school.total_area_gap_with_subsidy || '0.00'}</td>
-                <td style="padding: 6px 7px; border-right: 1px solid #dee2e6; text-align: center; font-size: 12px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" ${userNameTitle}>${userName}</td>
-                <td style="padding: 6px 7px; text-align: center; font-size: 12px; width: 180px;">
-                    <span style="color: #3498db; text-decoration: underline; cursor: pointer; margin: 0 4px; font-size: 11px;" onclick="viewDataSchoolDetails(${school.id})" onmouseover="this.style.color='#2980b9'" onmouseout="this.style.color='#3498db'">详情</span>
-                    <span style="color: #27ae60; text-decoration: underline; cursor: pointer; margin: 0 4px; font-size: 11px;" onclick="downloadRecord(${school.id})" onmouseover="this.style.color='#229954'" onmouseout="this.style.color='#27ae60'">下载</span>
-                    <span style="color: #f39c12; text-decoration: underline; cursor: pointer; margin: 0 4px; font-size: 11px;" onclick="editDataRecord(${school.id})" onmouseover="this.style.color='#e67e22'" onmouseout="this.style.color='#f39c12'">编辑</span>
-                    <span style="color: #e74c3c; text-decoration: underline; cursor: pointer; margin: 0 4px; font-size: 11px;" onclick="deleteSchoolCombination('${school.school_name}', '${school.year}', '${school.submitter_username || ''}')" onmouseover="this.style.color='#c0392b'" onmouseout="this.style.color='#e74c3c'">删除</span>
+                <td style="padding: 6px 7px; border-right: 1px solid #dee2e6; text-align: center; font-size: 12px;">${populationScope}</td>
+                <td style="padding: 6px 7px; border-right: 1px solid #dee2e6; text-align: center; font-size: 12px;">${calculationTime}</td>
+                <td style="padding: 6px 7px; border-right: 1px solid #dee2e6; text-align: center; font-size: 12px; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" ${userNameTitle}>${userName}</td>
+                <td style="padding: 6px 7px; text-align: center; font-size: 12px; width: 120px;">
+                    <span style="color: #27ae60; text-decoration: underline; cursor: pointer; margin: 0 8px; font-size: 11px;" onclick="downloadRecord(${school.id})" onmouseover="this.style.color='#229954'" onmouseout="this.style.color='#27ae60'">下载</span>
+                    <span ${deleteAttrs} style="color: #e74c3c; text-decoration: underline; cursor: pointer; margin: 0 8px; font-size: 11px;" onclick="deleteRecordHandler(this)" onmouseover="this.style.color='#c0392b'" onmouseout="this.style.color='#e74c3c'">删除</span>
                 </td>
             </tr>`;
         });
@@ -1427,6 +1794,70 @@ const DataManagementManager = {
             console.error('删除失败:', error);
             this.showDataError('删除失败: ' + error.message);
         }
+    },
+
+    /**
+     * 删除单条记录（按ID）
+     */
+    async deleteRecordById(recordId, metadata = {}) {
+        const numericId = parseInt(recordId, 10);
+
+        if (!numericId || Number.isNaN(numericId)) {
+            console.error('删除失败：无效的记录ID', recordId);
+            alert('删除失败：无效的记录ID');
+            return;
+        }
+
+        const { schoolName, year, submitterUsername } = metadata;
+        const descriptionParts = [];
+
+        if (schoolName) {
+            descriptionParts.push(schoolName);
+        }
+
+        if (year) {
+            descriptionParts.push(`${year}年测算`);
+        }
+
+        if (submitterUsername) {
+            descriptionParts.push(`测算用户:${submitterUsername}`);
+        }
+
+        const confirmLabel = descriptionParts.length > 0 ? descriptionParts.join(' - ') : `ID为 ${numericId} 的记录`;
+        const confirmMessage = `确定要删除“${confirmLabel}”吗？\n\n此操作将永久删除该记录且不可恢复。`;
+
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
+        console.log('开始按ID删除记录:', { recordId: numericId, metadata });
+
+        try {
+            const result = await DataManagementAPI.deleteRecord(numericId);
+
+            if (result && result.success) {
+                console.log('按ID删除记录成功:', result);
+                showMessage(result.message || '删除成功', 'success');
+
+                if (typeof AutoRefreshManager !== 'undefined') {
+                    AutoRefreshManager.refreshAfterDataDelete();
+                } else {
+                    setTimeout(() => {
+                        this.searchDataRecords().catch(err => {
+                            console.error('手动刷新数据失败:', err);
+                            alert('数据刷新失败，请手动点击“查找”按钮重新加载。');
+                        });
+                    }, 500);
+                }
+            } else {
+                const errorMsg = result && result.error ? result.error : '删除失败，请稍后重试';
+                console.error('按ID删除记录失败:', result);
+                showMessage(errorMsg, 'error');
+            }
+        } catch (error) {
+            console.error('按ID删除记录异常:', error);
+            showMessage('删除失败: ' + error.message, 'error');
+        }
     }
 };
 
@@ -1444,6 +1875,10 @@ function searchDataRecords() {
 
 function loadDataAvailableYears() {
     return dataManagementManager.loadDataAvailableYears();
+}
+
+function loadStudentPlanningParams() {
+    return dataManagementManager.loadStudentPlanningParams();
 }
 
 function loadDataAvailableUsers() {
@@ -1486,6 +1921,24 @@ function deleteSchoolCombination(schoolName, year, submitterUsername) {
     return dataManagementManager.deleteSchoolCombination(schoolName, year, submitterUsername);
 }
 
+function deleteRecordHandler(element) {
+    if (!element) {
+        console.error('删除失败：未获取到触发元素');
+        return;
+    }
+
+    const recordId = element.getAttribute('data-id');
+    const schoolName = element.getAttribute('data-school') || '';
+    const year = element.getAttribute('data-year') || '';
+    const submitterUsername = element.getAttribute('data-user') || '';
+
+    return dataManagementManager.deleteRecordById(recordId, {
+        schoolName,
+        year,
+        submitterUsername
+    });
+}
+
 // 将对象添加到全局作用域，以便其他模块使用
 if (typeof window !== 'undefined') {
     window.DataManagementManager = DataManagementManager;
@@ -1511,6 +1964,7 @@ if (typeof window !== 'undefined') {
     window.viewDataSchoolDetails = viewDataSchoolDetails;
     window.editDataRecord = editDataRecord;
     window.deleteSchoolCombination = deleteSchoolCombination;
+    window.deleteRecordHandler = deleteRecordHandler;
     window.closeDetailsModal = () => dataManagementManager.closeDetailsModal();
 
     // 单条记录下载
@@ -1580,14 +2034,24 @@ if (typeof window !== 'undefined') {
             return;
         }
         
-        const yearFilter = document.getElementById('dataYearFilter');
-        const schoolFilter = document.getElementById('dataSchoolNameFilter');
-        const userFilter = document.getElementById('dataUserFilter');
-        const batchDownloadBtn = document.getElementById('batchDownloadBtn');
+        // 从自定义单选框获取年份值
+        const yearDisplay = document.querySelector('#dataYearFilter .select-display');
+        const year = yearDisplay ? (yearDisplay.getAttribute('data-value') || 'all') : 'all';
         
-        const year = yearFilter ? yearFilter.value : 'all';
-        const school = schoolFilter ? schoolFilter.value : 'all';
-        const user = userFilter ? userFilter.value : 'all';
+        // 从自定义单选框获取学校值
+        const schoolDisplay = document.querySelector('#dataSchoolNameFilter .select-display');
+        const school = schoolDisplay ? (schoolDisplay.getAttribute('data-value') || 'all') : 'all';
+        
+        // 获取选中的用户
+        const userCheckboxes = document.querySelectorAll('#userDropdownList input[type="checkbox"]:checked');
+        const selectedUsers = Array.from(userCheckboxes).map(cb => cb.value);
+        const allCheckboxes = document.querySelectorAll('#userDropdownList input[type="checkbox"]');
+        
+        // 如果所有用户都被选中或没有选中任何用户，则使用 'all'
+        let user = 'all';
+        if (selectedUsers.length > 0 && selectedUsers.length < allCheckboxes.length) {
+            user = selectedUsers; // 传递数组
+        }
         
         if (!dataManagementManager.allDataSchoolsData || dataManagementManager.allDataSchoolsData.length === 0) {
             showMessage('没有可下载的数据，请先进行搜索', 'error');
@@ -1602,28 +2066,20 @@ if (typeof window !== 'undefined') {
         
         // 更新遮罩层信息
         dataManagementManager.removePageOverlay();
-        dataManagementManager.addPageOverlay('正在生成下载文件，请稍候...');
+        dataManagementManager.addPageOverlay('正在生成压缩包，请稍候...');
         
         try {
             // 构建请求参数
             const requestBody = {
-                exportType: 'filtered'
+                year: year === 'all' ? undefined : year,
+                school: school === 'all' ? undefined : school,
+                user: user === 'all' ? undefined : user
             };
-            
-            if (year !== 'all') {
-                requestBody.year = year;
-            }
-            if (school !== 'all') {
-                requestBody.school = school;
-            }
-            if (user !== 'all') {
-                requestBody.user = user;
-            }
             
             console.log('批量下载请求参数:', requestBody);
             
-            // 发送批量导出请求
-            const result = await CommonAPI.batchExport(requestBody);
+            // 调用新的批量下载API
+            const result = await CommonAPI.batchDownload(requestBody);
             
             if (!result.success) {
                 throw new Error(result.error || '批量下载失败');
@@ -1635,7 +2091,7 @@ if (typeof window !== 'undefined') {
                 window.location.href = result.downloadUrl;
                 
                 // 显示成功消息
-                showMessage(`批量下载成功！共下载 ${result.recordCount} 条记录`, 'info');
+                showMessage(`批量下载成功！共打包 ${result.schoolCount} 个学校的 ${result.recordCount} 条记录`, 'success');
             } else {
                 throw new Error(result.error || '批量下载失败');
             }

@@ -57,27 +57,90 @@ CREATE TABLE IF NOT EXISTS `calculation_history` (
     `year` INT NOT NULL COMMENT '测算年份',
     `submitter_username` VARCHAR(50) NULL COMMENT '填报单位用户名',
     `base_year` INT NULL COMMENT '基准年份',
+    `full_time_total` INT DEFAULT 0 COMMENT '全日制学生总数（人）',
     `full_time_undergraduate` INT DEFAULT 0 COMMENT '全日制本科生人数',
     `full_time_specialist` INT DEFAULT 0 COMMENT '全日制专科生人数',
     `full_time_master` INT DEFAULT 0 COMMENT '全日制硕士生人数',
     `full_time_doctor` INT DEFAULT 0 COMMENT '全日制博士生人数',
+    `international_total` INT DEFAULT 0 COMMENT '学历留学生总数（人）',
     `international_undergraduate` INT DEFAULT 0 COMMENT '留学生本科生人数',
-    `international_specialist` INT DEFAULT 0 COMMENT '留学生专科生人数',
     `international_master` INT DEFAULT 0 COMMENT '留学生硕士生人数',
     `international_doctor` INT DEFAULT 0 COMMENT '留学生博士生人数',
     `total_students` INT DEFAULT 0 COMMENT '学生总人数',
-    `teaching_area` DECIMAL(12,2) DEFAULT 0 COMMENT '教学及辅助用房面积',
-    `office_area` DECIMAL(12,2) DEFAULT 0 COMMENT '办公用房面积',
-    `total_living_area` DECIMAL(12,2) DEFAULT 0 COMMENT '生活用房总面积',
-    `dormitory_area` DECIMAL(12,2) DEFAULT 0 COMMENT '学生宿舍面积',
-    `logistics_area` DECIMAL(12,2) DEFAULT 0 COMMENT '后勤辅助用房面积',
-    `current_building_area` DECIMAL(12,2) DEFAULT 0 COMMENT '现状建筑总面积',
-    `required_building_area` DECIMAL(12,2) DEFAULT 0 COMMENT '应配建筑总面积',
-    `teaching_area_gap` DECIMAL(12,2) DEFAULT 0 COMMENT '教学及辅助用房缺口',
-    `office_area_gap` DECIMAL(12,2) DEFAULT 0 COMMENT '办公用房缺口',
-    `dormitory_area_gap` DECIMAL(12,2) DEFAULT 0 COMMENT '学生宿舍缺口',
-    `other_living_area_gap` DECIMAL(12,2) DEFAULT 0 COMMENT '其他生活用房缺口',
-    `logistics_area_gap` DECIMAL(12,2) DEFAULT 0 COMMENT '后勤辅助用房缺口',
+    
+    -- 测算口径字段
+    `building_area_calculation_scope` VARCHAR(100) DEFAULT '应配建筑面积' COMMENT '建筑面积测算口径',
+    `population_calculation_scope` VARCHAR(100) DEFAULT '规划学生数' COMMENT '预计人口测算口径',
+    `include_current_area` TINYINT(1) DEFAULT 1 COMMENT '是否包含现状建筑面积',
+    `include_preliminary_area` TINYINT(1) DEFAULT 1 COMMENT '是否包含拟建成前期建筑面积',
+    `include_under_construction_area` TINYINT(1) DEFAULT 1 COMMENT '是否包含拟建成在建建筑面积',
+    `include_special_subsidy` TINYINT(1) DEFAULT 1 COMMENT '是否包含特殊补助面积',
+    `baseline_area_composition` TEXT COMMENT '建筑面积底数构成（JSON格式）',
+    
+    -- 教学及辅助用房面积（按阶段）
+    `teaching_area_current` DECIMAL(12,2) DEFAULT 0 COMMENT '教学及辅助用房面积_现状',
+    `teaching_area_preliminary` DECIMAL(12,2) DEFAULT 0 COMMENT '教学及辅助用房面积_拟建成前期',
+    `teaching_area_under_construction` DECIMAL(12,2) DEFAULT 0 COMMENT '教学及辅助用房面积_拟建成在建',
+    `teaching_area_planned` DECIMAL(12,2) DEFAULT 0 COMMENT '教学及辅助用房面积_拟建成',
+    `teaching_area_total` DECIMAL(12,2) DEFAULT 0 COMMENT '教学及辅助用房面积_汇总',
+    `teaching_area_required` DECIMAL(12,2) DEFAULT 0 COMMENT '教学及辅助用房面积_测算',
+    `teaching_area_gap` DECIMAL(12,2) DEFAULT 0 COMMENT '教学及辅助用房面积_缺额',
+    
+    -- 办公用房面积（按阶段）
+    `office_area_current` DECIMAL(12,2) DEFAULT 0 COMMENT '办公用房面积_现状',
+    `office_area_preliminary` DECIMAL(12,2) DEFAULT 0 COMMENT '办公用房面积_拟建成前期',
+    `office_area_under_construction` DECIMAL(12,2) DEFAULT 0 COMMENT '办公用房面积_拟建成在建',
+    `office_area_planned` DECIMAL(12,2) DEFAULT 0 COMMENT '办公用房面积_拟建成',
+    `office_area_total` DECIMAL(12,2) DEFAULT 0 COMMENT '办公用房面积_汇总',
+    `office_area_required` DECIMAL(12,2) DEFAULT 0 COMMENT '办公用房面积_测算',
+    `office_area_gap` DECIMAL(12,2) DEFAULT 0 COMMENT '办公用房面积_缺额',
+    
+    -- 生活配套用房（按阶段）
+    `total_living_area_current` DECIMAL(12,2) DEFAULT 0 COMMENT '生活配套用房面积_现状',
+    `total_living_area_preliminary` DECIMAL(12,2) DEFAULT 0 COMMENT '生活配套用房面积_拟建成前期',
+    `total_living_area_under_construction` DECIMAL(12,2) DEFAULT 0 COMMENT '生活配套用房面积_拟建成在建',
+    `total_living_area_planned` DECIMAL(12,2) DEFAULT 0 COMMENT '生活配套用房面积_拟建成',
+    `total_living_area_total` DECIMAL(12,2) DEFAULT 0 COMMENT '生活配套用房面积_汇总',
+    `total_living_area_required` DECIMAL(12,2) DEFAULT 0 COMMENT '生活配套用房面积_测算',
+    `total_living_area_gap` DECIMAL(12,2) DEFAULT 0 COMMENT '生活配套用房面积_缺额',
+    
+    -- 生活配套用房 - 其中：学生宿舍（按阶段）
+    `dormitory_area_current` DECIMAL(12,2) DEFAULT 0 COMMENT '学生宿舍面积_现状',
+    `dormitory_area_preliminary` DECIMAL(12,2) DEFAULT 0 COMMENT '学生宿舍面积_拟建成前期',
+    `dormitory_area_under_construction` DECIMAL(12,2) DEFAULT 0 COMMENT '学生宿舍面积_拟建成在建',
+    `dormitory_area_planned` DECIMAL(12,2) DEFAULT 0 COMMENT '学生宿舍面积_拟建成',
+    `dormitory_area_total` DECIMAL(12,2) DEFAULT 0 COMMENT '学生宿舍面积_汇总',
+    `dormitory_area_required` DECIMAL(12,2) DEFAULT 0 COMMENT '学生宿舍面积_测算',
+    `dormitory_area_gap` DECIMAL(12,2) DEFAULT 0 COMMENT '学生宿舍面积_缺额',
+    
+    -- 生活配套用房 - 其中：其他生活用房（按阶段）
+    `other_living_area_current` DECIMAL(12,2) DEFAULT 0 COMMENT '其他生活用房面积_现状',
+    `other_living_area_preliminary` DECIMAL(12,2) DEFAULT 0 COMMENT '其他生活用房面积_拟建成前期',
+    `other_living_area_under_construction` DECIMAL(12,2) DEFAULT 0 COMMENT '其他生活用房面积_拟建成在建',
+    `other_living_area_planned` DECIMAL(12,2) DEFAULT 0 COMMENT '其他生活用房面积_拟建成',
+    `other_living_area_total` DECIMAL(12,2) DEFAULT 0 COMMENT '其他生活用房面积_汇总',
+    `other_living_area_required` DECIMAL(12,2) DEFAULT 0 COMMENT '其他生活用房面积_测算',
+    `other_living_area_gap` DECIMAL(12,2) DEFAULT 0 COMMENT '其他生活用房面积_缺额',
+    
+    -- 后勤辅助用房面积（按阶段）
+    `logistics_area_current` DECIMAL(12,2) DEFAULT 0 COMMENT '后勤辅助用房面积_现状',
+    `logistics_area_preliminary` DECIMAL(12,2) DEFAULT 0 COMMENT '后勤辅助用房面积_拟建成前期',
+    `logistics_area_under_construction` DECIMAL(12,2) DEFAULT 0 COMMENT '后勤辅助用房面积_拟建成在建',
+    `logistics_area_planned` DECIMAL(12,2) DEFAULT 0 COMMENT '后勤辅助用房面积_拟建成',
+    `logistics_area_total` DECIMAL(12,2) DEFAULT 0 COMMENT '后勤辅助用房面积_汇总',
+    `logistics_area_required` DECIMAL(12,2) DEFAULT 0 COMMENT '后勤辅助用房面积_测算',
+    `logistics_area_gap` DECIMAL(12,2) DEFAULT 0 COMMENT '后勤辅助用房面积_缺额',
+    
+    -- 建筑总面积（按阶段）
+    `current_building_area` DECIMAL(12,2) DEFAULT 0 COMMENT '建筑总面积_现状',
+    `preliminary_building_area` DECIMAL(12,2) DEFAULT 0 COMMENT '建筑总面积_拟建成前期',
+    `under_construction_building_area` DECIMAL(12,2) DEFAULT 0 COMMENT '建筑总面积_拟建成在建',
+    `planned_building_area` DECIMAL(12,2) DEFAULT 0 COMMENT '建筑总面积_拟建成',
+    `total_building_area` DECIMAL(12,2) DEFAULT 0 COMMENT '建筑总面积_汇总',
+    `required_building_area` DECIMAL(12,2) DEFAULT 0 COMMENT '建筑总面积_测算',
+    `building_area_gap` DECIMAL(12,2) DEFAULT 0 COMMENT '建筑总面积_缺额',
+    
+    -- 特殊补助和缺口汇总
     `total_area_gap_with_subsidy` DECIMAL(12,2) DEFAULT 0 COMMENT '建筑面积总缺口（含特殊补助）',
     `total_area_gap_without_subsidy` DECIMAL(12,2) DEFAULT 0 COMMENT '建筑面积总缺口（不含特殊补助）',
     `special_subsidy_total` DECIMAL(12,2) DEFAULT 0 COMMENT '特殊补助总面积',
@@ -138,6 +201,270 @@ CREATE TABLE IF NOT EXISTS `subsidized_area_standards` (
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     UNIQUE KEY `unique_school_room_subsidy` (`school_type`, `room_type`, `subsidy_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =====================================================
+-- 创建基础建筑面积底数表
+-- =====================================================
+CREATE TABLE IF NOT EXISTS `baseline_building_areas` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '记录ID（主键）',
+    `school_name` VARCHAR(255) NOT NULL COMMENT '学校名称',
+    `school_registry_id` INT NOT NULL COMMENT '关联学校注册表ID',
+    `submitter_username` VARCHAR(50) NULL COMMENT '提交人用户名',
+    `data_source` VARCHAR(200) NULL COMMENT '数据来源说明',
+    
+    -- 现状建筑面积
+    `current_teaching_area` DECIMAL(12,2) DEFAULT 0.00 COMMENT '教学及辅助用房面积(㎡)_现状',
+    `current_office_area` DECIMAL(12,2) DEFAULT 0.00 COMMENT '办公用房面积(㎡)_现状',
+    `current_logistics_area` DECIMAL(12,2) DEFAULT 0.00 COMMENT '后勤辅助用房面积(㎡)_现状',
+    `current_living_total_area` DECIMAL(12,2) DEFAULT 0.00 COMMENT '生活配套用房面积(㎡)_现状',
+    `current_dormitory_area` DECIMAL(12,2) DEFAULT 0.00 COMMENT '其中：学生宿舍面积(㎡)_现状',
+    `current_other_living_area` DECIMAL(12,2) DEFAULT 0.00 COMMENT '其中：其他生活用房面积(㎡)_现状',
+    `current_total_area` DECIMAL(12,2) DEFAULT 0.00 COMMENT '建筑总面积(㎡)_现状',
+    
+    -- 拟建成_前期
+    `planned_teaching_area` DECIMAL(12,2) DEFAULT 0.00 COMMENT '教学及辅助用房面积(㎡)_拟建成前期',
+    `planned_office_area` DECIMAL(12,2) DEFAULT 0.00 COMMENT '办公用房面积(㎡)_拟建成前期',
+    `planned_logistics_area` DECIMAL(12,2) DEFAULT 0.00 COMMENT '后勤辅助用房面积(㎡)_拟建成前期',
+    `planned_living_total_area` DECIMAL(12,2) DEFAULT 0.00 COMMENT '生活配套用房面积(㎡)_拟建成前期',
+    `planned_dormitory_area` DECIMAL(12,2) DEFAULT 0.00 COMMENT '其中：学生宿舍面积(㎡)_拟建成前期',
+    `planned_other_living_area` DECIMAL(12,2) DEFAULT 0.00 COMMENT '其中：其他生活用房面积(㎡)_拟建成前期',
+    `planned_total_area` DECIMAL(12,2) DEFAULT 0.00 COMMENT '建筑总面积(㎡)_拟建成前期',
+    
+    -- 拟建成_在建
+    `under_construction_teaching_area` DECIMAL(12,2) DEFAULT 0.00 COMMENT '教学及辅助用房面积(㎡)_拟建成在建',
+    `under_construction_office_area` DECIMAL(12,2) DEFAULT 0.00 COMMENT '办公用房面积(㎡)_拟建成在建',
+    `under_construction_logistics_area` DECIMAL(12,2) DEFAULT 0.00 COMMENT '后勤辅助用房面积(㎡)_拟建成在建',
+    `under_construction_living_total_area` DECIMAL(12,2) DEFAULT 0.00 COMMENT '生活配套用房面积(㎡)_拟建成在建',
+    `under_construction_dormitory_area` DECIMAL(12,2) DEFAULT 0.00 COMMENT '其中：学生宿舍面积(㎡)_拟建成在建',
+    `under_construction_other_living_area` DECIMAL(12,2) DEFAULT 0.00 COMMENT '其中：其他生活用房面积(㎡)_拟建成在建',
+    `under_construction_total_area` DECIMAL(12,2) DEFAULT 0.00 COMMENT '建筑总面积(㎡)_拟建成在建',
+    
+    `remarks` TEXT NULL COMMENT '备注说明',
+    
+    UNIQUE KEY `unique_school_submitter` (`school_name`, `submitter_username`),
+    FOREIGN KEY (`school_registry_id`) REFERENCES `school_registry`(`id`) ON DELETE CASCADE,
+    INDEX `idx_baseline_school_name` (`school_name`),
+    INDEX `idx_baseline_submitter` (`submitter_username`),
+    INDEX `idx_baseline_school_registry` (`school_registry_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='基础建筑面积底数表';
+
+-- 基础建筑面积底数表触发器：插入时自动计算
+DROP TRIGGER IF EXISTS `before_insert_baseline_areas`;
+DELIMITER $$
+CREATE TRIGGER `before_insert_baseline_areas`
+BEFORE INSERT ON `baseline_building_areas`
+FOR EACH ROW
+BEGIN
+    SET NEW.current_other_living_area = NEW.current_living_total_area - NEW.current_dormitory_area;
+    SET NEW.planned_other_living_area = NEW.planned_living_total_area - NEW.planned_dormitory_area;
+    SET NEW.under_construction_other_living_area = NEW.under_construction_living_total_area - NEW.under_construction_dormitory_area;
+    
+    SET NEW.current_total_area = NEW.current_teaching_area + NEW.current_office_area + 
+                                  NEW.current_logistics_area + NEW.current_living_total_area;
+    SET NEW.planned_total_area = NEW.planned_teaching_area + NEW.planned_office_area + 
+                                 NEW.planned_logistics_area + NEW.planned_living_total_area;
+    SET NEW.under_construction_total_area = NEW.under_construction_teaching_area + NEW.under_construction_office_area + 
+                                            NEW.under_construction_logistics_area + NEW.under_construction_living_total_area;
+END$$
+DELIMITER ;
+
+-- 基础建筑面积底数表触发器：更新时自动计算
+DROP TRIGGER IF EXISTS `before_update_baseline_areas`;
+DELIMITER $$
+CREATE TRIGGER `before_update_baseline_areas`
+BEFORE UPDATE ON `baseline_building_areas`
+FOR EACH ROW
+BEGIN
+    SET NEW.current_other_living_area = NEW.current_living_total_area - NEW.current_dormitory_area;
+    SET NEW.planned_other_living_area = NEW.planned_living_total_area - NEW.planned_dormitory_area;
+    SET NEW.under_construction_other_living_area = NEW.under_construction_living_total_area - NEW.under_construction_dormitory_area;
+    
+    SET NEW.current_total_area = NEW.current_teaching_area + NEW.current_office_area + 
+                                  NEW.current_logistics_area + NEW.current_living_total_area;
+    SET NEW.planned_total_area = NEW.planned_teaching_area + NEW.planned_office_area + 
+                                 NEW.planned_logistics_area + NEW.planned_living_total_area;
+    SET NEW.under_construction_total_area = NEW.under_construction_teaching_area + NEW.under_construction_office_area + 
+                                            NEW.under_construction_logistics_area + NEW.under_construction_living_total_area;
+END$$
+DELIMITER ;
+
+-- =====================================================
+-- 创建特殊补助建筑面积底数表
+-- =====================================================
+CREATE TABLE IF NOT EXISTS `special_subsidy_baseline_areas` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '记录ID（主键）',
+    `school_name` VARCHAR(255) NOT NULL COMMENT '学校名称',
+    `school_registry_id` INT NOT NULL COMMENT '关联学校注册表ID',
+    `submitter_username` VARCHAR(50) NULL COMMENT '提交人用户名',
+    `data_source` VARCHAR(200) NULL COMMENT '数据来源说明',
+    `data_source_date` DATE NULL COMMENT '数据统计截止日期',
+    `subsidy_name` VARCHAR(200) NOT NULL COMMENT '特殊补助名称',
+    `subsidy_area` DECIMAL(12,2) DEFAULT 0.00 COMMENT '特殊补助面积(㎡)',
+    `remarks` TEXT NULL COMMENT '补助说明/备注',
+    
+    UNIQUE KEY `unique_school_subsidy_submitter` (`school_name`, `subsidy_name`, `submitter_username`),
+    FOREIGN KEY (`school_registry_id`) REFERENCES `school_registry`(`id`) ON DELETE CASCADE,
+    INDEX `idx_special_subsidy_school_name` (`school_name`),
+    INDEX `idx_special_subsidy_name` (`subsidy_name`),
+    INDEX `idx_special_subsidy_submitter` (`submitter_username`),
+    INDEX `idx_special_subsidy_school_registry` (`school_registry_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='特殊补助建筑面积底数表';
+
+-- =====================================================
+-- 创建学生数数据来源表
+-- =====================================================
+CREATE TABLE IF NOT EXISTS `student_data_sources` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '数据来源ID（主键）',
+    `data_source` VARCHAR(100) NOT NULL UNIQUE COMMENT '数据来源名称',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='学生数数据来源表';
+
+-- 插入预定义的数据来源
+INSERT IGNORE INTO `student_data_sources` (`data_source`) VALUES
+('高校基础表（2025）'),
+('高校基础表（2026）'),
+('上级部门核定（待核定）'),
+('上级部门核定（已核定）'),
+('学校自供'),
+('抄告规模（十四五）'),
+('抄告规模（十五五）');
+
+-- =====================================================
+-- 创建规划学生数表
+-- =====================================================
+-- 创建规划学生数表
+-- =====================================================
+CREATE TABLE IF NOT EXISTS `planned_student_numbers` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '记录ID（主键）',
+    `school_name` VARCHAR(255) NOT NULL COMMENT '学校名称',
+    `year` INT NOT NULL COMMENT '规划年份',
+    `school_registry_id` INT NOT NULL COMMENT '学校注册表ID',
+    `submitter_username` VARCHAR(50) DEFAULT NULL COMMENT '提交人用户名',
+    `calculation_criteria` VARCHAR(100) DEFAULT NULL COMMENT '测算口径',
+    
+    -- 全日制学生数
+    `full_time_total` INT DEFAULT 0 COMMENT '全日制学生总数（人）',
+    `full_time_specialist` INT DEFAULT 0 COMMENT '专科全日制学生总数（人）',
+    `full_time_undergraduate` INT DEFAULT 0 COMMENT '本科全日制学生总数（人）',
+    `full_time_master` INT DEFAULT 0 COMMENT '硕士全日制学生总数（人）',
+    `full_time_doctor` INT DEFAULT 0 COMMENT '博士全日制学生总数（人）',
+    
+    -- 学历留学生数
+    `international_total` INT DEFAULT 0 COMMENT '学历留学生总数（人）',
+    `international_undergraduate` INT DEFAULT 0 COMMENT '学历本科留学生数（人）',
+    `international_master` INT DEFAULT 0 COMMENT '学历硕士留学生数（人）',
+    `international_doctor` INT DEFAULT 0 COMMENT '学历博士留学生数（人）',
+    
+    -- 学生总数
+    `student_grand_total` INT DEFAULT 0 COMMENT '学生总人数（人）',
+    
+    -- 时间戳
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    
+    UNIQUE KEY `unique_user_school_year_criteria` (`submitter_username`, `school_name`, `year`, `calculation_criteria`),
+    FOREIGN KEY (`school_registry_id`) REFERENCES `school_registry`(`id`) ON DELETE CASCADE,
+    INDEX `idx_planned_students_school_name` (`school_name`),
+    INDEX `idx_planned_students_year` (`year`),
+    INDEX `idx_planned_students_submitter` (`submitter_username`),
+    INDEX `idx_planned_students_school_year` (`school_registry_id`, `year`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='规划学生数表';
+
+-- 规划学生数表触发器：插入时自动计算
+DROP TRIGGER IF EXISTS `before_insert_planned_students`;
+DELIMITER $$
+CREATE TRIGGER `before_insert_planned_students`
+BEFORE INSERT ON `planned_student_numbers`
+FOR EACH ROW
+BEGIN
+    SET NEW.full_time_total = COALESCE(NEW.full_time_specialist, 0) + 
+                              COALESCE(NEW.full_time_undergraduate, 0) + 
+                              COALESCE(NEW.full_time_master, 0) + 
+                              COALESCE(NEW.full_time_doctor, 0);
+    
+    SET NEW.international_total = COALESCE(NEW.international_undergraduate, 0) + 
+                                  COALESCE(NEW.international_master, 0) + 
+                                  COALESCE(NEW.international_doctor, 0);
+    
+    SET NEW.student_grand_total = NEW.full_time_total + NEW.international_total;
+END$$
+DELIMITER ;
+
+-- 规划学生数表触发器：更新时自动计算
+DROP TRIGGER IF EXISTS `before_update_planned_students`;
+DELIMITER $$
+CREATE TRIGGER `before_update_planned_students`
+BEFORE UPDATE ON `planned_student_numbers`
+FOR EACH ROW
+BEGIN
+    SET NEW.full_time_total = COALESCE(NEW.full_time_specialist, 0) + 
+                              COALESCE(NEW.full_time_undergraduate, 0) + 
+                              COALESCE(NEW.full_time_master, 0) + 
+                              COALESCE(NEW.full_time_doctor, 0);
+    
+    SET NEW.international_total = COALESCE(NEW.international_undergraduate, 0) + 
+                                  COALESCE(NEW.international_master, 0) + 
+                                  COALESCE(NEW.international_doctor, 0);
+    
+    SET NEW.student_grand_total = NEW.full_time_total + NEW.international_total;
+END$$
+DELIMITER ;
+
+-- =====================================================
+-- 创建现状面积预设表
+-- =====================================================
+CREATE TABLE IF NOT EXISTS `current_area_presets` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '记录ID（主键）',
+    `school_registry_id` INT NOT NULL COMMENT '关联学校注册表ID',
+    `data_source` VARCHAR(200) NOT NULL COMMENT '数据来源说明（必填，用于区分同一学校的不同数据源）',
+    `teaching_area_current` DECIMAL(12,2) DEFAULT 0.00 COMMENT '教学及辅助用房面积_现状（㎡）',
+    `office_area_current` DECIMAL(12,2) DEFAULT 0.00 COMMENT '办公用房面积_现状（㎡）',
+    `total_living_area_current` DECIMAL(12,2) DEFAULT 0.00 COMMENT '生活配套用房面积_现状（㎡）',
+    `dormitory_area_current` DECIMAL(12,2) DEFAULT 0.00 COMMENT '学生宿舍面积_现状（㎡）',
+    `other_living_area_current` DECIMAL(12,2) DEFAULT 0.00 COMMENT '其他生活用房面积_现状（㎡）',
+    `logistics_area_current` DECIMAL(12,2) DEFAULT 0.00 COMMENT '后勤辅助用房面积_现状（㎡）',
+    `current_building_area` DECIMAL(12,2) DEFAULT 0.00 COMMENT '建筑总面积_现状（㎡）',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    
+    UNIQUE KEY `unique_school_data_source` (`school_registry_id`, `data_source`),
+    FOREIGN KEY (`school_registry_id`) REFERENCES `school_registry`(`id`) ON DELETE CASCADE,
+    INDEX `idx_current_area_presets_school` (`school_registry_id`),
+    INDEX `idx_current_area_presets_source` (`data_source`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='现状面积预设表（支持同一学校的多个数据来源）';
+
+-- 现状面积预设表触发器：插入时自动计算
+DROP TRIGGER IF EXISTS `before_insert_current_area_presets`;
+DELIMITER $$
+CREATE TRIGGER `before_insert_current_area_presets`
+BEFORE INSERT ON `current_area_presets`
+FOR EACH ROW
+BEGIN
+    -- 自动计算其他生活用房面积
+    SET NEW.other_living_area_current = NEW.total_living_area_current - NEW.dormitory_area_current;
+    
+    -- 自动计算建筑总面积
+    SET NEW.current_building_area = NEW.teaching_area_current + NEW.office_area_current + 
+                                     NEW.logistics_area_current + NEW.total_living_area_current;
+END$$
+DELIMITER ;
+
+-- 现状面积预设表触发器：更新时自动计算
+DROP TRIGGER IF EXISTS `before_update_current_area_presets`;
+DELIMITER $$
+CREATE TRIGGER `before_update_current_area_presets`
+BEFORE UPDATE ON `current_area_presets`
+FOR EACH ROW
+BEGIN
+    -- 自动计算其他生活用房面积
+    SET NEW.other_living_area_current = NEW.total_living_area_current - NEW.dormitory_area_current;
+    
+    -- 自动计算建筑总面积
+    SET NEW.current_building_area = NEW.teaching_area_current + NEW.office_area_current + 
+                                     NEW.logistics_area_current + NEW.total_living_area_current;
+END$$
+DELIMITER ;
 
 -- 创建索引以提高查询性能
 CREATE INDEX `idx_school_registry_name` ON `school_registry`(`school_name`);
