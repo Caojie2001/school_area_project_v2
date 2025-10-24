@@ -530,7 +530,7 @@ const CalculationStandardsManager = {
                 'A': '教学及辅助用房',
                 'B': '办公用房',
                 'C1': '学生宿舍',
-                'C2': '学生宿舍', // C2 也是学生宿舍的一部分
+                'C2': '其他生活用房',
                 'D': '后勤辅助用房'
             };
             updateRoomType = roomTypeMapping[roomType];
@@ -556,20 +556,20 @@ const CalculationStandardsManager = {
         
         // 更新本地数据缓存
         if (valueType === 'basic') {
-            // 对于基础标准，更新院校类型结构
+            // 对于基础标准，更新院校类型结构（使用映射后的数据库字段名）
             if (!this.currentStandards.basicStandards[schoolType]) {
                 this.currentStandards.basicStandards[schoolType] = {};
             }
-            this.currentStandards.basicStandards[schoolType][roomType] = value;
+            this.currentStandards.basicStandards[schoolType][updateRoomType] = value;
         } else {
-            // 对于补贴标准，使用新的三重索引结构：院校类型 -> 用房类型 -> 补贴类型
+            // 对于补贴标准，使用新的三重索引结构：院校类型 -> 用房类型 -> 补贴类型（使用映射后的数据库字段名）
             if (!this.currentStandards.subsidizedStandards[schoolType]) {
                 this.currentStandards.subsidizedStandards[schoolType] = {};
             }
-            if (!this.currentStandards.subsidizedStandards[schoolType][roomType]) {
-                this.currentStandards.subsidizedStandards[schoolType][roomType] = {};
+            if (!this.currentStandards.subsidizedStandards[schoolType][updateRoomType]) {
+                this.currentStandards.subsidizedStandards[schoolType][updateRoomType] = {};
             }
-            this.currentStandards.subsidizedStandards[schoolType][roomType][valueType] = value;
+            this.currentStandards.subsidizedStandards[schoolType][updateRoomType][valueType] = value;
         }
         
         // 添加到待保存的更改列表

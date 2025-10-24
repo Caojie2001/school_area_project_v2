@@ -214,7 +214,7 @@ rm -f /tmp/test_security_cookies.txt
 ## 📚 相关文档
 
 - [安全配置文档](../README.md#-安全特性)
-- [项目结构文档](../PROJECT_STRUCTURE.md)
+- [项目结构文档](../docs/PROJECT_STRUCTURE.md)
 - [API 文档](../README.md#-api-接口文档)
 
 ---

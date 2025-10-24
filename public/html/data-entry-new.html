@@ -1694,8 +1694,27 @@
                         '现有教学及辅助用房面积': currentTotalArea.teaching || 0,
                         '现有办公用房面积': currentTotalArea.office || 0,
                         '现有学生宿舍面积': currentTotalArea.dormitory || 0,
+                        '现有其他生活面积': (currentTotalArea.living || 0) - (currentTotalArea.dormitory || 0),
                         '现有生活用房总面积': currentTotalArea.living || 0,
-                        '现有后勤辅助用房面积': currentTotalArea.logistics || 0
+                        '现有后勤辅助用房面积': currentTotalArea.logistics || 0,
+                        // 添加原始数据，供后端分离现状和拟建成
+                        'baseline': baseline ? {
+                            current_teaching_area: baseline.current_teaching_area || 0,
+                            current_office_area: baseline.current_office_area || 0,
+                            current_dormitory_area: baseline.current_dormitory_area || 0,
+                            current_living_total_area: baseline.current_living_total_area || 0,
+                            current_logistics_area: baseline.current_logistics_area || 0,
+                            planned_teaching_area: baseline.planned_teaching_area || 0,
+                            planned_office_area: baseline.planned_office_area || 0,
+                            planned_dormitory_area: baseline.planned_dormitory_area || 0,
+                            planned_living_total_area: baseline.planned_living_total_area || 0,
+                            planned_logistics_area: baseline.planned_logistics_area || 0,
+                            under_construction_teaching_area: baseline.under_construction_teaching_area || 0,
+                            under_construction_office_area: baseline.under_construction_office_area || 0,
+                            under_construction_dormitory_area: baseline.under_construction_dormitory_area || 0,
+                            under_construction_living_total_area: baseline.under_construction_living_total_area || 0,
+                            under_construction_logistics_area: baseline.under_construction_logistics_area || 0
+                        } : null
                     };
                     
                     // 调试日志

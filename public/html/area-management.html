@@ -531,6 +531,9 @@
             const schoolTypeDisplay = document.getElementById('schoolTypeDisplay');
 
             if (schoolSelect.value && schoolTypeDisplay) {
+                // 先清空表单数据,避免前一个学校的数据被继承
+                clearFormData();
+                
                 // 显示学校类型
                 const schoolType = selectedOption.dataset.schoolType || '';
                 schoolTypeDisplay.textContent = schoolType ? `学校类型: ${schoolType}` : '';
@@ -1203,14 +1206,28 @@
             // 计算所有添加的补助项目数量
             count = subsidyInputs.length;
             
-            const totalInput = document.getElementById('subsidyTotalAreaSum');
-            if (totalInput) {
-                totalInput.value = total.toFixed(2);
-            }
+            // 获取汇总行
+            const summaryRow = container.querySelector('.subsidy-summary');
             
-            const countInput = document.getElementById('subsidyTotalCountArea');
-            if (countInput) {
-                countInput.value = count;
+            // 如果没有补助项,隐藏汇总行;有补助项则显示并更新数据
+            if (count === 0) {
+                if (summaryRow) {
+                    summaryRow.style.display = 'none';
+                }
+            } else {
+                if (summaryRow) {
+                    summaryRow.style.display = 'flex';
+                }
+                
+                const totalInput = document.getElementById('subsidyTotalAreaSum');
+                if (totalInput) {
+                    totalInput.value = total.toFixed(2);
+                }
+                
+                const countInput = document.getElementById('subsidyTotalCountArea');
+                if (countInput) {
+                    countInput.value = count;
+                }
             }
         }
 
