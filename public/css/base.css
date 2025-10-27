@@ -12,11 +12,6 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
-    overflow-x: hidden; /* 防止页面横向滚动 */
-}
-
-html {
-    overflow-x: hidden; /* 防止html元素横向滚动 */
 }
 
 /* === 应用容器 === */

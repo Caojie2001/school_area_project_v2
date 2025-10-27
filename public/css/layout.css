@@ -86,6 +86,9 @@
     margin-left: 280px;
     background: #f8f9fa;
     min-height: 100vh;
+    width: calc(100% - 280px); /* 确保宽度正确 */
+    max-width: calc(100% - 280px); /* 防止超出 */
+    overflow-x: auto; /* 允许横向滚动而不是裁剪 */
 }
 
 .content-header {
@@ -118,10 +121,9 @@
 }
 
 .content-body {
-    padding: 20px;
-    max-width: none;
+    padding: 15px 30px; /* 与content-header保持一致 */
+    max-width: 100%;
     width: 100%;
-    overflow-x: hidden; /* 防止内容区域横向溢出 */
     box-sizing: border-box;
 }
 

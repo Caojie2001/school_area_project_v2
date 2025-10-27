@@ -81,9 +81,13 @@
     background: white;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-    padding: 30px;
-    margin-bottom: 25px;
+    padding: 20px;
+    margin-bottom: 20px;
     border: 1px solid #e9ecef;
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: auto;
 }
 
 .card h3 {
@@ -466,10 +470,22 @@
 }
 
 /* 响应式设计 */
+@media (max-width: 1400px) {
+    .card {
+        padding: 15px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .card {
+        padding: 12px;
+    }
+}
+
 @media (max-width: 768px) {
     .card {
-        padding: 20px;
-        margin-bottom: 20px;
+        padding: 10px;
+        margin-bottom: 15px;
     }
     
     .card-header h2 {
