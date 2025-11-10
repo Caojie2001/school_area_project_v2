@@ -18,6 +18,9 @@ router.get('/schools/registry', requireAuth, schoolController.getSchoolRegistry)
 // 获取学校名称列表（用于下拉框）
 router.get('/schools/names', requireAuth, schoolController.getSchoolNames);
 
+// 获取有测算历史记录的学校列表
+router.get('/schools/with-calculation-history', requireAuth, schoolController.getSchoolsWithCalculationHistory);
+
 // 获取院校类型列表
 router.get('/schools/types', requireAuth, schoolController.getSchoolTypes);
 

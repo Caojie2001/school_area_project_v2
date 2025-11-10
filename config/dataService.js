@@ -34,60 +34,97 @@ async function saveSchoolInfo(schoolData, specialSubsidies = null, calculationRe
             include_current_area: schoolData['是否包含现有面积'] !== false ? 1 : 0,
             include_preliminary_area: schoolData['是否包含初步计划面积'] !== false ? 1 : 0,
             include_under_construction_area: schoolData['是否包含在建面积'] !== false ? 1 : 0,
-            include_special_subsidy: schoolData['是否包含特殊补助'] !== false ? 1 : 0,
+            include_special_subsidy: schoolData['是否包含特殊补助'] === true ? 1 : 0,
             
             // 基线面积组成（JSON格式）
             baseline_area_composition: schoolData['基线面积组成'] ? JSON.stringify(schoolData['基线面积组成']) : null,
             
+            // 从baseline对象中提取各阶段面积数据（仅当对应类型被选中时才提取）
             // 教学及辅助用房 - 7阶段
-            teaching_area_current: schoolData['现有教学及辅助用房面积'] || schoolData['现有教学面积'] || calculationResults?.['现有教学面积'] || 0,
-            teaching_area_preliminary: schoolData['初步计划教学面积'] || calculationResults?.['初步计划教学面积'] || 0,
-            teaching_area_under_construction: schoolData['在建教学面积'] || calculationResults?.['在建教学面积'] || 0,
+            teaching_area_current: (schoolData['是否包含现有面积'] !== false) 
+                ? (schoolData['baseline']?.current_teaching_area || schoolData['现有教学及辅助用房面积'] || schoolData['现有教学面积'] || calculationResults?.['现有教学面积'] || 0)
+                : 0,
+            teaching_area_preliminary: (schoolData['是否包含初步计划面积'] !== false)
+                ? (schoolData['baseline']?.planned_teaching_area || schoolData['初步计划教学面积'] || calculationResults?.['初步计划教学面积'] || 0)
+                : 0,
+            teaching_area_under_construction: (schoolData['是否包含在建面积'] !== false)
+                ? (schoolData['baseline']?.under_construction_teaching_area || schoolData['在建教学面积'] || calculationResults?.['在建教学面积'] || 0)
+                : 0,
             teaching_area_planned: 0, // 将在下面计算：preliminary + under_construction
             teaching_area_total: schoolData['合计教学面积'] || calculationResults?.['合计教学面积'] || 0,
             teaching_area_required: schoolData['应配教学面积'] || calculationResults?.['应配教学面积'] || 0,
             teaching_area_gap: schoolData['教学面积缺口'] || calculationResults?.['教学面积缺口'] || calculationResults?.['教学及辅助用房缺口(A)'] || 0,
             
             // 办公用房 - 7阶段
-            office_area_current: schoolData['现有办公用房面积'] || schoolData['现有办公面积'] || calculationResults?.['现有办公面积'] || 0,
-            office_area_preliminary: schoolData['初步计划办公面积'] || calculationResults?.['初步计划办公面积'] || 0,
-            office_area_under_construction: schoolData['在建办公面积'] || calculationResults?.['在建办公面积'] || 0,
+            office_area_current: (schoolData['是否包含现有面积'] !== false)
+                ? (schoolData['baseline']?.current_office_area || schoolData['现有办公用房面积'] || schoolData['现有办公面积'] || calculationResults?.['现有办公面积'] || 0)
+                : 0,
+            office_area_preliminary: (schoolData['是否包含初步计划面积'] !== false)
+                ? (schoolData['baseline']?.planned_office_area || schoolData['初步计划办公面积'] || calculationResults?.['初步计划办公面积'] || 0)
+                : 0,
+            office_area_under_construction: (schoolData['是否包含在建面积'] !== false)
+                ? (schoolData['baseline']?.under_construction_office_area || schoolData['在建办公面积'] || calculationResults?.['在建办公面积'] || 0)
+                : 0,
             office_area_planned: 0, // 将在下面计算：preliminary + under_construction
             office_area_total: schoolData['合计办公面积'] || calculationResults?.['合计办公面积'] || 0,
             office_area_required: schoolData['应配办公面积'] || calculationResults?.['应配办公面积'] || 0,
             office_area_gap: schoolData['办公面积缺口'] || calculationResults?.['办公面积缺口'] || calculationResults?.['办公用房缺口(B)'] || 0,
             
             // 生活用房总面积 - 7阶段
-            total_living_area_current: schoolData['现有生活用房总面积'] || schoolData['现有生活总面积'] || calculationResults?.['现有生活总面积'] || 0,
-            total_living_area_preliminary: schoolData['初步计划生活总面积'] || calculationResults?.['初步计划生活总面积'] || 0,
-            total_living_area_under_construction: schoolData['在建生活总面积'] || calculationResults?.['在建生活总面积'] || 0,
+            total_living_area_current: (schoolData['是否包含现有面积'] !== false)
+                ? (schoolData['baseline']?.current_living_total_area || schoolData['现有生活用房总面积'] || schoolData['现有生活总面积'] || calculationResults?.['现有生活总面积'] || 0)
+                : 0,
+            total_living_area_preliminary: (schoolData['是否包含初步计划面积'] !== false)
+                ? (schoolData['baseline']?.planned_living_total_area || schoolData['初步计划生活总面积'] || calculationResults?.['初步计划生活总面积'] || 0)
+                : 0,
+            total_living_area_under_construction: (schoolData['是否包含在建面积'] !== false)
+                ? (schoolData['baseline']?.under_construction_living_total_area || schoolData['在建生活总面积'] || calculationResults?.['在建生活总面积'] || 0)
+                : 0,
             total_living_area_planned: 0, // 将在下面计算：preliminary + under_construction
             total_living_area_total: schoolData['合计生活总面积'] || calculationResults?.['合计生活总面积'] || 0,
             total_living_area_required: schoolData['应配生活总面积'] || calculationResults?.['应配生活总面积'] || 0,
             total_living_area_gap: schoolData['生活总面积缺口'] || calculationResults?.['生活总面积缺口'] || 0,
             
             // 学生宿舍 - 7阶段
-            dormitory_area_current: schoolData['现有学生宿舍面积'] || schoolData['现有宿舍面积'] || calculationResults?.['现有宿舍面积'] || 0,
-            dormitory_area_preliminary: schoolData['初步计划宿舍面积'] || calculationResults?.['初步计划宿舍面积'] || 0,
-            dormitory_area_under_construction: schoolData['在建宿舍面积'] || calculationResults?.['在建宿舍面积'] || 0,
+            dormitory_area_current: (schoolData['是否包含现有面积'] !== false)
+                ? (schoolData['baseline']?.current_dormitory_area || schoolData['现有学生宿舍面积'] || schoolData['现有宿舍面积'] || calculationResults?.['现有宿舍面积'] || 0)
+                : 0,
+            dormitory_area_preliminary: (schoolData['是否包含初步计划面积'] !== false)
+                ? (schoolData['baseline']?.planned_dormitory_area || schoolData['初步计划宿舍面积'] || calculationResults?.['初步计划宿舍面积'] || 0)
+                : 0,
+            dormitory_area_under_construction: (schoolData['是否包含在建面积'] !== false)
+                ? (schoolData['baseline']?.under_construction_dormitory_area || schoolData['在建宿舍面积'] || calculationResults?.['在建宿舍面积'] || 0)
+                : 0,
             dormitory_area_planned: 0, // 将在下面计算：preliminary + under_construction
             dormitory_area_total: schoolData['合计宿舍面积'] || calculationResults?.['合计宿舍面积'] || 0,
             dormitory_area_required: schoolData['应配宿舍面积'] || calculationResults?.['应配宿舍面积'] || 0,
             dormitory_area_gap: schoolData['宿舍面积缺口'] || calculationResults?.['宿舍面积缺口'] || calculationResults?.['学生宿舍缺口(C1)'] || 0,
             
-            // 其他生活用房 - 7阶段
-            other_living_area_current: schoolData['现有其他生活面积'] || calculationResults?.['现有其他生活面积'] || 0,
-            other_living_area_preliminary: schoolData['初步计划其他生活面积'] || calculationResults?.['初步计划其他生活面积'] || 0,
-            other_living_area_under_construction: schoolData['在建其他生活面积'] || calculationResults?.['在建其他生活面积'] || 0,
+            // 其他生活用房 - 7阶段（生活总面积 - 宿舍面积，仅当对应类型被选中时才计算）
+            other_living_area_current: (schoolData['是否包含现有面积'] !== false && schoolData['baseline'])
+                ? ((parseFloat(schoolData['baseline'].current_living_total_area) || 0) - (parseFloat(schoolData['baseline'].current_dormitory_area) || 0))
+                : 0,
+            other_living_area_preliminary: (schoolData['是否包含初步计划面积'] !== false && schoolData['baseline'])
+                ? ((parseFloat(schoolData['baseline'].planned_living_total_area) || 0) - (parseFloat(schoolData['baseline'].planned_dormitory_area) || 0))
+                : 0,
+            other_living_area_under_construction: (schoolData['是否包含在建面积'] !== false && schoolData['baseline'])
+                ? ((parseFloat(schoolData['baseline'].under_construction_living_total_area) || 0) - (parseFloat(schoolData['baseline'].under_construction_dormitory_area) || 0))
+                : 0,
             other_living_area_planned: 0, // 将在下面计算：preliminary + under_construction
             other_living_area_total: schoolData['合计其他生活面积'] || calculationResults?.['合计其他生活面积'] || 0,
             other_living_area_required: schoolData['应配其他生活面积'] || calculationResults?.['应配其他生活面积'] || 0,
             other_living_area_gap: schoolData['其他生活面积缺口'] || calculationResults?.['其他生活面积缺口'] || calculationResults?.['其他生活用房缺口(C2)'] || 0,
             
             // 后勤辅助用房 - 7阶段
-            logistics_area_current: schoolData['现有后勤辅助用房面积'] || schoolData['现有后勤面积'] || calculationResults?.['现有后勤面积'] || 0,
-            logistics_area_preliminary: schoolData['初步计划后勤面积'] || calculationResults?.['初步计划后勤面积'] || 0,
-            logistics_area_under_construction: schoolData['在建后勤面积'] || calculationResults?.['在建后勤面积'] || 0,
+            logistics_area_current: (schoolData['是否包含现有面积'] !== false)
+                ? (schoolData['baseline']?.current_logistics_area || schoolData['现有后勤辅助用房面积'] || schoolData['现有后勤面积'] || calculationResults?.['现有后勤面积'] || 0)
+                : 0,
+            logistics_area_preliminary: (schoolData['是否包含初步计划面积'] !== false)
+                ? (schoolData['baseline']?.planned_logistics_area || schoolData['初步计划后勤面积'] || calculationResults?.['初步计划后勤面积'] || 0)
+                : 0,
+            logistics_area_under_construction: (schoolData['是否包含在建面积'] !== false)
+                ? (schoolData['baseline']?.under_construction_logistics_area || schoolData['在建后勤面积'] || calculationResults?.['在建后勤面积'] || 0)
+                : 0,
             logistics_area_planned: 0, // 将在下面计算：preliminary + under_construction
             logistics_area_total: schoolData['合计后勤面积'] || calculationResults?.['合计后勤面积'] || 0,
             logistics_area_required: schoolData['应配后勤面积'] || calculationResults?.['应配后勤面积'] || 0,
@@ -110,6 +147,13 @@ async function saveSchoolInfo(schoolData, specialSubsidies = null, calculationRe
             // 计算结果JSON
             calculation_results: calculationResults ? JSON.stringify(calculationResults) : null
         };
+        
+        // 调试日志：输出提取的面积数据
+        console.log('📐 提取的面积数据:');
+        console.log('  教学 - 现状:', calcData.teaching_area_current, '前期:', calcData.teaching_area_preliminary, '在建:', calcData.teaching_area_under_construction);
+        console.log('  办公 - 现状:', calcData.office_area_current, '前期:', calcData.office_area_preliminary, '在建:', calcData.office_area_under_construction);
+        console.log('  生活 - 现状:', calcData.total_living_area_current, '前期:', calcData.total_living_area_preliminary, '在建:', calcData.total_living_area_under_construction);
+        console.log('  后勤 - 现状:', calcData.logistics_area_current, '前期:', calcData.logistics_area_preliminary, '在建:', calcData.logistics_area_under_construction);
         
         const toNumberValue = (value) => {
             if (value === undefined || value === null || value === '') {
@@ -179,11 +223,46 @@ async function saveSchoolInfo(schoolData, specialSubsidies = null, calculationRe
         calcData.total_living_area_planned = sumToTwo(calcData.dormitory_area_planned, calcData.other_living_area_planned);
         calcData.total_living_area_total = sumToTwo(calcData.total_living_area_current, calcData.total_living_area_planned);
 
-        calcData.teaching_area_total = sumToTwo(calcData.teaching_area_current, calcData.teaching_area_planned);
-        calcData.office_area_total = sumToTwo(calcData.office_area_current, calcData.office_area_planned);
-        calcData.dormitory_area_total = sumToTwo(calcData.dormitory_area_current, calcData.dormitory_area_planned);
-        calcData.other_living_area_total = sumToTwo(calcData.other_living_area_current, calcData.other_living_area_planned);
-        calcData.logistics_area_total = sumToTwo(calcData.logistics_area_current, calcData.logistics_area_planned);
+        // 根据计入测算的建筑面积类型计算汇总值
+        // 只累加选中的面积类型（现状、拟建成_前期、拟建成_在建(含竣工)）
+        const includeCurrentArea = calcData.include_current_area;
+        const includePreliminaryArea = calcData.include_preliminary_area;
+        const includeUnderConstructionArea = calcData.include_under_construction_area;
+        
+        // 教学及辅助用房汇总
+        calcData.teaching_area_total = sumToTwo(
+            includeCurrentArea ? calcData.teaching_area_current : 0,
+            includePreliminaryArea ? calcData.teaching_area_preliminary : 0,
+            includeUnderConstructionArea ? calcData.teaching_area_under_construction : 0
+        );
+        
+        // 办公用房汇总
+        calcData.office_area_total = sumToTwo(
+            includeCurrentArea ? calcData.office_area_current : 0,
+            includePreliminaryArea ? calcData.office_area_preliminary : 0,
+            includeUnderConstructionArea ? calcData.office_area_under_construction : 0
+        );
+        
+        // 学生宿舍汇总
+        calcData.dormitory_area_total = sumToTwo(
+            includeCurrentArea ? calcData.dormitory_area_current : 0,
+            includePreliminaryArea ? calcData.dormitory_area_preliminary : 0,
+            includeUnderConstructionArea ? calcData.dormitory_area_under_construction : 0
+        );
+        
+        // 其他生活用房汇总
+        calcData.other_living_area_total = sumToTwo(
+            includeCurrentArea ? calcData.other_living_area_current : 0,
+            includePreliminaryArea ? calcData.other_living_area_preliminary : 0,
+            includeUnderConstructionArea ? calcData.other_living_area_under_construction : 0
+        );
+        
+        // 后勤辅助用房汇总
+        calcData.logistics_area_total = sumToTwo(
+            includeCurrentArea ? calcData.logistics_area_current : 0,
+            includePreliminaryArea ? calcData.logistics_area_preliminary : 0,
+            includeUnderConstructionArea ? calcData.logistics_area_under_construction : 0
+        );
 
         // 建筑总量按分项合计，确保导出与明细一致
         calcData.current_building_area = sumToTwo(
@@ -2033,24 +2112,25 @@ async function getStudentPlanningParams(userRole = null, username = null, school
     try {
         console.log('📋 getStudentPlanningParams 调用参数:', { userRole, username, schoolName });
         
+        // 从 calculation_history 表获取历史测算记录的年份和学生数测算口径
         let query = `
-            SELECT 
-                psn.id,
-                psn.year,
-                psn.calculation_criteria,
-                psn.school_name,
-                psn.submitter_username,
-                psn.student_grand_total,
-                psn.created_at
-            FROM planned_student_numbers psn
+            SELECT DISTINCT
+                ch.id,
+                ch.year,
+                ch.population_calculation_scope as calculation_criteria,
+                sr.school_name,
+                ch.submitter_username,
+                ch.created_at
+            FROM calculation_history ch
+            LEFT JOIN school_registry sr ON ch.school_registry_id = sr.id
         `;
         
         const conditions = [];
         const params = [];
         
-        // 学校用户只能看到自己提交的或本校的学生规划参数
+        // 学校用户只能看到自己提交的或本校的测算历史
         if (userRole === 'school' && username && schoolName) {
-            conditions.push('(psn.submitter_username = ? OR psn.school_name = ?)');
+            conditions.push('(ch.submitter_username = ? OR sr.school_name = ?)');
             params.push(username, schoolName);
         }
         
@@ -2058,14 +2138,14 @@ async function getStudentPlanningParams(userRole = null, username = null, school
             query += ' WHERE ' + conditions.join(' AND ');
         }
         
-        query += ' ORDER BY psn.year DESC, psn.created_at DESC';
+        query += ' ORDER BY ch.year DESC, ch.created_at DESC';
         
         console.log('🔍 执行SQL查询:', query);
         console.log('📊 查询参数:', params);
         
         const [rows] = await pool.execute(query, params);
         
-        console.log(`✅ 查询到 ${rows.length} 条学生规划参数记录`);
+        console.log(`✅ 查询到 ${rows.length} 条历史测算记录`);
         
         // 按年份分组，并对年份+测算口径进行去重
         const groupedByYear = {};
@@ -2073,7 +2153,7 @@ async function getStudentPlanningParams(userRole = null, username = null, school
         
         rows.forEach(row => {
             const year = row.year.toString();
-            const criteria = row.calculation_criteria || '默认口径';
+            const criteria = row.calculation_criteria || '规划学生数';
             const key = `${year}_${criteria}`; // 创建唯一键
             
             // 如果这个组合还没有被添加过
@@ -2089,7 +2169,6 @@ async function getStudentPlanningParams(userRole = null, username = null, school
                     calculation_criteria: criteria,
                     school_name: row.school_name,
                     submitter_username: row.submitter_username,
-                    student_grand_total: row.student_grand_total,
                     created_at: row.created_at
                 });
             }

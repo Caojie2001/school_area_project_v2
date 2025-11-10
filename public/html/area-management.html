@@ -364,6 +364,9 @@
 
     <!-- 页面初始化脚本 -->
     <script>
+        // 全局标志位:是否正在自动加载底数
+        let isAutoLoadingBaseline = false;
+        
         // 页面加载时初始化
         document.addEventListener('DOMContentLoaded', async function() {
             try {
@@ -525,13 +528,17 @@
         /**
          * 处理学校选择变化
          */
-        function handleSchoolChange() {
+        async function handleSchoolChange() {
             const schoolSelect = document.getElementById('schoolName');
             const selectedOption = schoolSelect.options[schoolSelect.selectedIndex];
             const schoolTypeDisplay = document.getElementById('schoolTypeDisplay');
 
             if (schoolSelect.value && schoolTypeDisplay) {
+                console.log('========== 开始切换学校 ==========');
+                console.log('新学校:', schoolSelect.value);
+                
                 // 先清空表单数据,避免前一个学校的数据被继承
+                console.log('步骤1: 清空表单数据');
                 clearFormData();
                 
                 // 显示学校类型
@@ -542,10 +549,15 @@
                 console.log('已选择学校:', schoolSelect.value, '学校类型:', schoolType);
                 
                 // 加载该学校的数据来源列表
+                console.log('步骤2: 加载数据来源列表');
                 loadDataSources(schoolSelect.value);
                 
-                // 自动加载底数数据
-                autoLoadBaseline(schoolSelect.value);
+                // 自动加载底数数据 (等待完成)
+                console.log('步骤3: 开始加载底数');
+                await autoLoadBaseline(schoolSelect.value);
+                console.log('步骤3: 底数加载完成');
+                
+                console.log('========== 学校切换完成 ==========');
                 
                 // TODO: 加载该学校的其他数据
                 // loadCurrentAreaData();
@@ -570,108 +582,253 @@
          */
         async function autoLoadBaseline(schoolName) {
             try {
-                console.log('📢 自动加载底数数据:', schoolName);
+                console.log('📢 [autoLoadBaseline] 开始加载底数数据:', schoolName);
                 
                 // 获取当前用户信息
                 const user = AuthManager.getCurrentUser();
                 const username = user?.username;
 
                 if (!username) {
-                    console.warn('无法获取用户信息，跳过自动加载底数');
+                    console.warn('⚠️ [autoLoadBaseline] 无法获取用户信息，跳过自动加载底数');
                     return;
                 }
 
+                console.log('📢 [autoLoadBaseline] 用户:', username);
+
                 // 调用API获取底数
+                console.log('📢 [autoLoadBaseline] 发起API请求获取底数...');
                 const response = await fetch(
                     `/api/baseline-areas?schoolName=${encodeURIComponent(schoolName)}&submitterUsername=${encodeURIComponent(username)}`,
                     { credentials: 'include' }
                 );
 
+                console.log('📢 [autoLoadBaseline] API响应状态:', response.status);
+
                 if (!response.ok) {
-                    console.log('该学校暂无底数数据');
+                    console.log('❌ [autoLoadBaseline] 该学校暂无底数数据，保持表单清零状态');
+                    console.log('📊 [autoLoadBaseline] 当前表单状态检查:');
+                    console.log('  - teachingAreaCurrent2:', document.getElementById('teachingAreaCurrent2')?.value);
+                    console.log('  - teachingAreaPlanned:', document.getElementById('teachingAreaPlanned')?.value);
                     return;
                 }
 
                 const result = await response.json();
+                console.log('📢 [autoLoadBaseline] API返回数据:', result);
 
                 if (result.success && result.data && result.data.length > 0) {
                     const baseline = result.data[0];
-                    console.log('✅ 自动加载底数成功:', baseline);
+                    console.log('✅ [autoLoadBaseline] 找到底数数据:', baseline);
+                    
+                    // 设置标志位,防止触发 handleDataSourceChange
+                    console.log('🚩 [autoLoadBaseline] 设置标志位 isAutoLoadingBaseline = true');
+                    isAutoLoadingBaseline = true;
                     
                     // 填充数据来源
                     const dataSourceElement = document.getElementById('dataSource');
                     if (dataSourceElement && baseline.data_source) {
-                        // 等待数据来源列表加载完成
-                        setTimeout(() => {
-                            dataSourceElement.value = baseline.data_source;
-                            console.log('✅ 已自动填充数据来源:', baseline.data_source);
-                        }, 500);
+                        // 等待数据来源列表加载完成后填充
+                        console.log('⏳ [autoLoadBaseline] 等待500ms让数据来源列表加载完成...');
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        
+                        console.log('📝 [autoLoadBaseline] 设置数据来源为:', baseline.data_source);
+                        dataSourceElement.value = baseline.data_source;
+                        console.log('✅ [autoLoadBaseline] 数据来源已设置');
+                        
+                        // 从 current_area_presets 加载原始数据来源的数据(仅填充只读区域)
+                        console.log('📥 [autoLoadBaseline] 开始加载只读区域数据...');
+                        await loadCurrentAreaPresetDataReadonlyOnly(schoolName, baseline.data_source);
+                        console.log('✅ [autoLoadBaseline] 只读区域数据加载完成');
+                        
+                        // 从底数加载用户上次修改的数据(填充可编辑区域和拟建成数据)
+                        console.log('📥 [autoLoadBaseline] 开始加载可编辑区域数据...');
+                        await fillBaselineDataEditableOnly(baseline, schoolName, username);
+                        console.log('✅ [autoLoadBaseline] 可编辑区域数据加载完成');
+                    } else {
+                        console.log('ℹ️ [autoLoadBaseline] 底数没有数据来源，直接填充数据');
+                        // 如果没有数据来源，直接填充底数数据
+                        await fillBaselineDataEditableOnly(baseline, schoolName, username);
                     }
                     
-                    // 填充现状面积（第二个数据卡片）
-                    const currentFields = [
-                        { id: 'teachingAreaCurrent2', value: baseline.current_teaching_area },
-                        { id: 'officeAreaCurrent2', value: baseline.current_office_area },
-                        { id: 'logisticsAreaCurrent2', value: baseline.current_logistics_area },
-                        { id: 'totalLivingAreaCurrent2', value: baseline.current_living_total_area },
-                        { id: 'dormitoryAreaCurrent2', value: baseline.current_dormitory_area }
-                    ];
-                    
-                    currentFields.forEach(field => {
-                        const element = document.getElementById(field.id);
-                        if (element) {
-                            element.value = safeToFixed(field.value);
-                        }
-                    });
-                    
-                    // 填充拟建成前期
-                    const plannedFields = [
-                        { id: 'teachingAreaPlanned', value: baseline.planned_teaching_area },
-                        { id: 'officeAreaPlanned', value: baseline.planned_office_area },
-                        { id: 'logisticsAreaPlanned', value: baseline.planned_logistics_area },
-                        { id: 'totalLivingAreaPlanned', value: baseline.planned_living_total_area },
-                        { id: 'dormitoryAreaPlanned', value: baseline.planned_dormitory_area }
-                    ];
-                    
-                    plannedFields.forEach(field => {
-                        const element = document.getElementById(field.id);
-                        if (element) {
-                            element.value = safeToFixed(field.value);
-                        }
-                    });
-                    
-                    // 填充拟建成在建
-                    const underConstructionFields = [
-                        { id: 'teachingAreaPlanned2', value: baseline.under_construction_teaching_area },
-                        { id: 'officeAreaPlanned2', value: baseline.under_construction_office_area },
-                        { id: 'logisticsAreaPlanned2', value: baseline.under_construction_logistics_area },
-                        { id: 'totalLivingAreaPlanned2', value: baseline.under_construction_living_total_area },
-                        { id: 'dormitoryAreaPlanned2', value: baseline.under_construction_dormitory_area }
-                    ];
-                    
-                    underConstructionFields.forEach(field => {
-                        const element = document.getElementById(field.id);
-                        if (element) {
-                            element.value = safeToFixed(field.value);
-                        }
-                    });
-                    
-                    // 触发自动计算
-                    calculateCurrentAreas2();
-                    calculatePlannedAreas1();
-                    calculatePlannedAreas2();
-                    
-                    // 加载特殊补助
-                    await loadSpecialSubsidies(schoolName, username);
-                    
-                    console.log('✅ 底数数据已自动加载完成');
+                    // 清除标志位
+                    console.log('🚩 [autoLoadBaseline] 清除标志位 isAutoLoadingBaseline = false');
+                    isAutoLoadingBaseline = false;
                 } else {
-                    console.log('ℹ️ 该学校暂无底数数据');
+                    console.log('ℹ️ [autoLoadBaseline] 该学校暂无底数数据，保持表单清零状态');
+                    console.log('📊 [autoLoadBaseline] 当前表单状态检查:');
+                    console.log('  - teachingAreaCurrent2:', document.getElementById('teachingAreaCurrent2')?.value);
+                    console.log('  - teachingAreaPlanned:', document.getElementById('teachingAreaPlanned')?.value);
                 }
 
             } catch (error) {
-                console.error('自动加载底数失败:', error);
+                console.error('❌ [autoLoadBaseline] 自动加载底数失败:', error);
+                console.log('🚩 [autoLoadBaseline] 发生错误，清除标志位');
+                isAutoLoadingBaseline = false;
                 // 不显示错误消息，因为这是自动操作
+            }
+        }
+
+        /**
+         * 填充底数数据到表单 (仅填充可编辑区域)
+         * 用于切换学校时加载底数的场景,不覆盖只读区域
+         */
+        async function fillBaselineDataEditableOnly(baseline, schoolName, username) {
+            try {
+                // 从底数填充"修改后的数据"可编辑区域 (现状面积 - 后缀2)
+                const currentEditableFields = [
+                    { id: 'teachingAreaCurrent2', value: baseline.current_teaching_area },
+                    { id: 'officeAreaCurrent2', value: baseline.current_office_area },
+                    { id: 'logisticsAreaCurrent2', value: baseline.current_logistics_area },
+                    { id: 'totalLivingAreaCurrent2', value: baseline.current_living_total_area },
+                    { id: 'dormitoryAreaCurrent2', value: baseline.current_dormitory_area }
+                ];
+                
+                currentEditableFields.forEach(field => {
+                    const element = document.getElementById(field.id);
+                    if (element) {
+                        element.value = safeToFixed(field.value);
+                    }
+                });
+                
+                // 填充拟建成前期
+                const plannedFields = [
+                    { id: 'teachingAreaPlanned', value: baseline.planned_teaching_area },
+                    { id: 'officeAreaPlanned', value: baseline.planned_office_area },
+                    { id: 'logisticsAreaPlanned', value: baseline.planned_logistics_area },
+                    { id: 'totalLivingAreaPlanned', value: baseline.planned_living_total_area },
+                    { id: 'dormitoryAreaPlanned', value: baseline.planned_dormitory_area }
+                ];
+                
+                plannedFields.forEach(field => {
+                    const element = document.getElementById(field.id);
+                    if (element) {
+                        element.value = safeToFixed(field.value);
+                    }
+                });
+                
+                // 填充拟建成在建
+                const underConstructionFields = [
+                    { id: 'teachingAreaPlanned2', value: baseline.under_construction_teaching_area },
+                    { id: 'officeAreaPlanned2', value: baseline.under_construction_office_area },
+                    { id: 'logisticsAreaPlanned2', value: baseline.under_construction_logistics_area },
+                    { id: 'totalLivingAreaPlanned2', value: baseline.under_construction_living_total_area },
+                    { id: 'dormitoryAreaPlanned2', value: baseline.under_construction_dormitory_area }
+                ];
+                
+                underConstructionFields.forEach(field => {
+                    const element = document.getElementById(field.id);
+                    if (element) {
+                        element.value = safeToFixed(field.value);
+                    }
+                });
+                
+                // 触发自动计算
+                calculateCurrentAreas2();
+                calculatePlannedAreas1();
+                calculatePlannedAreas2();
+                
+                // 加载特殊补助
+                if (schoolName && username) {
+                    await loadSpecialSubsidies(schoolName, username);
+                }
+                
+                console.log('✅ 底数数据填充完成(仅可编辑区域)');
+            } catch (error) {
+                console.error('填充底数数据失败:', error);
+            }
+        }
+
+        /**
+         * 填充底数数据到表单 (辅助函数)
+         * @param {Object} baseline - 底数数据对象
+         * @param {string} schoolName - 学校名称
+         * @param {string} username - 用户名
+         */
+        async function fillBaselineData(baseline, schoolName, username) {
+            try {
+                // 1. 如果有数据来源,先尝试从 preset 加载只读区域
+                if (baseline.data_source) {
+                    await loadCurrentAreaPresetData(schoolName, baseline.data_source);
+                } else {
+                    // 如果没有数据来源,将只读区域设置为0
+                    const readonlyFields = [
+                        'teachingAreaCurrent',
+                        'officeAreaCurrent',
+                        'logisticsAreaCurrent',
+                        'totalLivingAreaCurrent',
+                        'dormitoryAreaCurrent',
+                        'otherLivingAreaCurrent',
+                        'currentBuildingArea'
+                    ];
+                    
+                    readonlyFields.forEach(fieldId => {
+                        const field = document.getElementById(fieldId);
+                        if (field) {
+                            field.value = '0.00';
+                        }
+                    });
+                }
+                
+                // 2. 从底数填充"修改后的数据"可编辑区域 (现状面积 - 后缀2)
+                const currentEditableFields = [
+                    { id: 'teachingAreaCurrent2', value: baseline.current_teaching_area },
+                    { id: 'officeAreaCurrent2', value: baseline.current_office_area },
+                    { id: 'logisticsAreaCurrent2', value: baseline.current_logistics_area },
+                    { id: 'totalLivingAreaCurrent2', value: baseline.current_living_total_area },
+                    { id: 'dormitoryAreaCurrent2', value: baseline.current_dormitory_area }
+                ];
+                
+                currentEditableFields.forEach(field => {
+                    const element = document.getElementById(field.id);
+                    if (element) {
+                        element.value = safeToFixed(field.value);
+                    }
+                });
+                
+                // 3. 填充拟建成前期
+                const plannedFields = [
+                    { id: 'teachingAreaPlanned', value: baseline.planned_teaching_area },
+                    { id: 'officeAreaPlanned', value: baseline.planned_office_area },
+                    { id: 'logisticsAreaPlanned', value: baseline.planned_logistics_area },
+                    { id: 'totalLivingAreaPlanned', value: baseline.planned_living_total_area },
+                    { id: 'dormitoryAreaPlanned', value: baseline.planned_dormitory_area }
+                ];
+                
+                plannedFields.forEach(field => {
+                    const element = document.getElementById(field.id);
+                    if (element) {
+                        element.value = safeToFixed(field.value);
+                    }
+                });
+                
+                // 4. 填充拟建成在建
+                const underConstructionFields = [
+                    { id: 'teachingAreaPlanned2', value: baseline.under_construction_teaching_area },
+                    { id: 'officeAreaPlanned2', value: baseline.under_construction_office_area },
+                    { id: 'logisticsAreaPlanned2', value: baseline.under_construction_logistics_area },
+                    { id: 'totalLivingAreaPlanned2', value: baseline.under_construction_living_total_area },
+                    { id: 'dormitoryAreaPlanned2', value: baseline.under_construction_dormitory_area }
+                ];
+                
+                underConstructionFields.forEach(field => {
+                    const element = document.getElementById(field.id);
+                    if (element) {
+                        element.value = safeToFixed(field.value);
+                    }
+                });
+                
+                // 触发自动计算
+                calculateCurrentAreas2();
+                calculatePlannedAreas1();
+                calculatePlannedAreas2();
+                
+                // 5. 加载特殊补助
+                if (schoolName && username) {
+                    await loadSpecialSubsidies(schoolName, username);
+                }
+                
+                console.log('✅ 底数数据填充完成');
+            } catch (error) {
+                console.error('填充底数数据失败:', error);
             }
         }
 
@@ -679,11 +836,21 @@
          * 清空表单数据
          */
         function clearFormData() {
-            // 清空所有面积输入框
-            const areaInputs = document.querySelectorAll('input[type="number"]');
+            console.log('🧹 [clearFormData] 开始清空表单数据');
+            
+            // 清空所有面积输入框(包括只读和可编辑)
+            // 只读区域是 type="number", 可编辑区域是 type="text"
+            const areaInputs = document.querySelectorAll(
+                'input[type="text"][id*="Area"], input[type="text"][id*="Building"], ' +
+                'input[type="number"][id*="Area"], input[type="number"][id*="Building"]'
+            );
+            console.log('🧹 [clearFormData] 找到', areaInputs.length, '个面积输入框');
+            
             areaInputs.forEach(input => {
-                if (!input.readOnly) {
-                    input.value = '0.00';
+                const oldValue = input.value;
+                input.value = '0.00';
+                if (oldValue !== '0.00' && oldValue !== '0' && oldValue !== '') {
+                    console.log('  - 清空', input.id, '从', oldValue, '到 0.00');
                 }
             });
             
@@ -691,11 +858,16 @@
             const container = document.getElementById('specialSubsidiesArea');
             if (container) {
                 const subsidyItems = container.querySelectorAll('.subsidy-item:not(.subsidy-summary)');
+                console.log('🧹 [clearFormData] 清空', subsidyItems.length, '个特殊补助项');
                 subsidyItems.forEach(item => item.remove());
                 updateSubsidySummaryArea();
             }
             
-            console.log('✅ 表单数据已清空');
+            console.log('✅ [clearFormData] 表单数据已清空(包括只读和可编辑区域)');
+            console.log('📊 [clearFormData] 清空后状态检查:');
+            console.log('  - teachingAreaCurrent (只读):', document.getElementById('teachingAreaCurrent')?.value);
+            console.log('  - teachingAreaCurrent2 (可编辑):', document.getElementById('teachingAreaCurrent2')?.value);
+            console.log('  - teachingAreaPlanned:', document.getElementById('teachingAreaPlanned')?.value);
         }
 
         /**
@@ -707,6 +879,9 @@
             
             if (!dataSourceSelect) return;
             
+            console.log('📋 [loadDataSources] 开始加载数据来源列表, 学校:', schoolName);
+            console.log('📋 [loadDataSources] 当前数据来源值:', dataSourceSelect.value);
+            
             try {
                 // 清空现有选项
                 dataSourceSelect.innerHTML = '<option value="">加载中...</option>';
@@ -717,13 +892,17 @@
                     credentials: 'include'
                 });
                 
+                console.log('📋 [loadDataSources] API响应状态:', response.status);
+                
                 if (!response.ok) {
                     // 404表示该学校没有记录，这是正常情况
                     if (response.status === 404) {
+                        console.log('📋 [loadDataSources] 该学校没有数据来源记录');
                         dataSourceSelect.innerHTML = '<option value="">该学校暂无数据来源</option>';
                         if (dataSourceHint) {
                             dataSourceHint.style.display = 'none';
                         }
+                        console.log('📋 [loadDataSources] 设置后的数据来源值:', dataSourceSelect.value);
                         return;
                     }
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -733,12 +912,15 @@
                 
                 // 清空下拉框
                 dataSourceSelect.innerHTML = '<option value="">请选择数据来源</option>';
+                console.log('📋 [loadDataSources] 重置数据来源下拉框为: 请选择数据来源');
                 
                 if (result.success && result.data && result.data.length > 0) {
                     // 提取唯一的数据来源
                     const dataSources = [...new Set(result.data
                         .map(item => item.data_source)
                         .filter(source => source && source.trim() !== ''))];
+                    
+                    console.log('📋 [loadDataSources] 找到数据来源:', dataSources);
                     
                     if (dataSources.length > 0) {
                         // 添加数据来源选项
@@ -754,7 +936,8 @@
                             dataSourceHint.style.display = 'block';
                         }
                         
-                        console.log(`已加载 ${dataSources.length} 个数据来源`);
+                        console.log(`✅ [loadDataSources] 已加载 ${dataSources.length} 个数据来源`);
+                        console.log('📋 [loadDataSources] 当前选中值:', dataSourceSelect.value);
                     } else {
                         dataSourceSelect.innerHTML = '<option value="">该学校暂无数据来源</option>';
                         if (dataSourceHint) {
@@ -769,7 +952,7 @@
                 }
                 
             } catch (error) {
-                console.error('加载数据来源失败:', error);
+                console.error('❌ [loadDataSources] 加载数据来源失败:', error);
                 dataSourceSelect.innerHTML = '<option value="">加载失败，请重试</option>';
                 if (dataSourceHint) {
                     dataSourceHint.style.display = 'none';
@@ -925,17 +1108,34 @@
         /**
          * 处理数据来源选择变化
          */
-        function handleDataSourceChange() {
+        async function handleDataSourceChange() {
+            console.log('🔄 [handleDataSourceChange] 数据来源变化事件触发');
+            console.log('🚩 [handleDataSourceChange] isAutoLoadingBaseline =', isAutoLoadingBaseline);
+            
+            // 如果正在自动加载底数,跳过处理
+            if (isAutoLoadingBaseline) {
+                console.log('⏭️ [handleDataSourceChange] 正在自动加载底数,跳过数据来源变化处理');
+                return;
+            }
+            
             const dataSourceSelect = document.getElementById('dataSource');
             const schoolSelect = document.getElementById('schoolName');
             
+            console.log('🔄 [handleDataSourceChange] 数据来源:', dataSourceSelect?.value);
+            console.log('🔄 [handleDataSourceChange] 学校:', schoolSelect?.value);
+            
             if (dataSourceSelect.value && schoolSelect.value) {
-                console.log('已选择数据来源:', dataSourceSelect.value);
-                // 加载该数据来源的详细数据
-                loadCurrentAreaDetails(schoolSelect.value, dataSourceSelect.value);
+                console.log('📥 [handleDataSourceChange] 开始加载数据来源的原始数据...');
+                
+                // 从 current_area_presets 表加载原始数据来源的数据
+                // 同时填充只读区域和可编辑区域
+                await loadCurrentAreaPresetData(schoolSelect.value, dataSourceSelect.value);
+                
+                console.log('✅ [handleDataSourceChange] 数据加载完成');
             } else {
                 // 隐藏数据显示区域并重置所有字段
                 resetCurrentAreaData();
+                resetPlannedAreaData();
             }
         }
 
@@ -991,6 +1191,254 @@
         }
 
         /**
+         * 从 current_area_presets 表加载原始数据来源的数据 (仅填充只读区域)
+         * 用于切换学校时加载底数的场景
+         */
+        async function loadCurrentAreaPresetDataReadonlyOnly(schoolName, dataSource) {
+            try {
+                console.log('📢 从 current_area_presets 加载数据来源数据(仅只读区域):', { schoolName, dataSource });
+                
+                const response = await fetch(
+                    `/api/current-area-presets/school/${encodeURIComponent(schoolName)}/source/${encodeURIComponent(dataSource)}`,
+                    { credentials: 'include' }
+                );
+                
+                if (!response.ok) {
+                    console.log('未找到该数据来源的 preset 数据，将只读区域设置为0');
+                    const readonlyFields = [
+                        'teachingAreaCurrent', 'officeAreaCurrent', 'logisticsAreaCurrent',
+                        'totalLivingAreaCurrent', 'dormitoryAreaCurrent', 'otherLivingAreaCurrent',
+                        'currentBuildingArea'
+                    ];
+                    readonlyFields.forEach(fieldId => {
+                        const field = document.getElementById(fieldId);
+                        if (field) field.value = '0.00';
+                    });
+                    return;
+                }
+                
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    const data = result.data;
+                    // 只填充"数据来源的数据"只读区域
+                    document.getElementById('teachingAreaCurrent').value = Number(data.teaching_area_current || 0).toFixed(2);
+                    document.getElementById('officeAreaCurrent').value = Number(data.office_area_current || 0).toFixed(2);
+                    document.getElementById('logisticsAreaCurrent').value = Number(data.logistics_area_current || 0).toFixed(2);
+                    document.getElementById('totalLivingAreaCurrent').value = Number(data.total_living_area_current || 0).toFixed(2);
+                    document.getElementById('dormitoryAreaCurrent').value = Number(data.dormitory_area_current || 0).toFixed(2);
+                    document.getElementById('otherLivingAreaCurrent').value = Number(data.other_living_area_current || 0).toFixed(2);
+                    document.getElementById('currentBuildingArea').value = Number(data.current_building_area || 0).toFixed(2);
+                    
+                    console.log('✅ 数据来源的原始数据已加载到只读区域');
+                }
+            } catch (error) {
+                console.error('加载 preset 数据失败:', error);
+            }
+        }
+
+        /**
+         * 从 current_area_presets 表加载原始数据来源的数据
+         * 同时填充"数据来源的数据"只读区域和"修改后的数据"可编辑区域
+         */
+        async function loadCurrentAreaPresetData(schoolName, dataSource) {
+            try {
+                console.log('📢 从 current_area_presets 加载数据来源数据:', { schoolName, dataSource });
+                
+                // 调用API获取特定学校和数据来源的现状面积数据
+                const response = await fetch(
+                    `/api/current-area-presets/school/${encodeURIComponent(schoolName)}/source/${encodeURIComponent(dataSource)}`,
+                    { credentials: 'include' }
+                );
+                
+                if (!response.ok) {
+                    console.log('未找到该数据来源的 preset 数据，将只读区域和可编辑区域设置为0');
+                    // 重置只读区域为0
+                    const readonlyFields = [
+                        'teachingAreaCurrent',
+                        'officeAreaCurrent',
+                        'logisticsAreaCurrent',
+                        'totalLivingAreaCurrent',
+                        'dormitoryAreaCurrent',
+                        'otherLivingAreaCurrent',
+                        'currentBuildingArea'
+                    ];
+                    
+                    readonlyFields.forEach(fieldId => {
+                        const field = document.getElementById(fieldId);
+                        if (field) {
+                            field.value = '0.00';
+                        }
+                    });
+                    
+                    // 重置可编辑区域为0
+                    const editableFields = [
+                        'teachingAreaCurrent2',
+                        'officeAreaCurrent2',
+                        'logisticsAreaCurrent2',
+                        'totalLivingAreaCurrent2',
+                        'dormitoryAreaCurrent2'
+                    ];
+                    
+                    editableFields.forEach(fieldId => {
+                        const field = document.getElementById(fieldId);
+                        if (field) {
+                            field.value = '0.00';
+                        }
+                    });
+                    
+                    // 触发计算
+                    calculateCurrentAreas2();
+                    return;
+                }
+                
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    const data = result.data;
+                    
+                    // 1. 填充"数据来源的数据"只读区域（第一个卡片）
+                    document.getElementById('teachingAreaCurrent').value = Number(data.teaching_area_current || 0).toFixed(2);
+                    document.getElementById('officeAreaCurrent').value = Number(data.office_area_current || 0).toFixed(2);
+                    document.getElementById('logisticsAreaCurrent').value = Number(data.logistics_area_current || 0).toFixed(2);
+                    document.getElementById('totalLivingAreaCurrent').value = Number(data.total_living_area_current || 0).toFixed(2);
+                    document.getElementById('dormitoryAreaCurrent').value = Number(data.dormitory_area_current || 0).toFixed(2);
+                    document.getElementById('otherLivingAreaCurrent').value = Number(data.other_living_area_current || 0).toFixed(2);
+                    document.getElementById('currentBuildingArea').value = Number(data.current_building_area || 0).toFixed(2);
+                    
+                    // 2. 同时填充"修改后的数据"可编辑区域（第二个卡片 - 后缀2）
+                    document.getElementById('teachingAreaCurrent2').value = Number(data.teaching_area_current || 0).toFixed(2);
+                    document.getElementById('officeAreaCurrent2').value = Number(data.office_area_current || 0).toFixed(2);
+                    document.getElementById('logisticsAreaCurrent2').value = Number(data.logistics_area_current || 0).toFixed(2);
+                    document.getElementById('totalLivingAreaCurrent2').value = Number(data.total_living_area_current || 0).toFixed(2);
+                    document.getElementById('dormitoryAreaCurrent2').value = Number(data.dormitory_area_current || 0).toFixed(2);
+                    
+                    // 触发自动计算（计算其他生活用房和总面积）
+                    calculateCurrentAreas2();
+                    
+                    console.log('✅ 数据来源的原始数据已加载到只读区域和可编辑区域');
+                } else {
+                    console.log('未找到数据');
+                }
+                
+            } catch (error) {
+                console.error('加载 preset 数据失败:', error);
+                // 不显示错误消息，因为这是自动操作
+            }
+        }
+
+        /**
+         * 根据数据来源自动加载底数数据
+         * 注意：只填充"修改后的数据"可编辑区域、拟建成面积和特殊补助
+         * 不填充"数据来源的数据"只读区域(那部分由 loadCurrentAreaPresetData 负责)
+         */
+        async function autoLoadBaselineByDataSource(schoolName, dataSource) {
+            try {
+                console.log('📢 根据数据来源从底数加载用户上次修改的数据:', { schoolName, dataSource });
+                
+                // 获取当前用户信息
+                const user = AuthManager.getCurrentUser();
+                const username = user?.username;
+
+                if (!username) {
+                    console.warn('无法获取用户信息，跳过自动加载底数');
+                    return;
+                }
+
+                // 调用API获取底数
+                const response = await fetch(
+                    `/api/baseline-areas?schoolName=${encodeURIComponent(schoolName)}&submitterUsername=${encodeURIComponent(username)}`,
+                    { credentials: 'include' }
+                );
+
+                if (!response.ok) {
+                    console.log('该学校暂无底数数据');
+                    return;
+                }
+
+                const result = await response.json();
+
+                if (result.success && result.data && result.data.length > 0) {
+                    // 查找匹配数据来源的底数
+                    const baseline = result.data.find(item => item.data_source === dataSource) || result.data[0];
+                    
+                    if (baseline.data_source !== dataSource) {
+                        console.log(`⚠️ 未找到数据来源为"${dataSource}"的底数，使用默认底数`);
+                    } else {
+                        console.log(`✅ 找到匹配数据来源"${dataSource}"的底数`);
+                    }
+                    
+                    // ⚠️ 不再填充"数据来源的数据"只读区域，那部分由 loadCurrentAreaPresetData() 负责
+                    
+                    // 填充"修改后的数据"可编辑区域 (现状面积 - 后缀2)
+                    // 这里显示的是用户上次在底数中保存的修改后的值
+                    const currentEditableFields = [
+                        { id: 'teachingAreaCurrent2', value: baseline.current_teaching_area },
+                        { id: 'officeAreaCurrent2', value: baseline.current_office_area },
+                        { id: 'logisticsAreaCurrent2', value: baseline.current_logistics_area },
+                        { id: 'totalLivingAreaCurrent2', value: baseline.current_living_total_area },
+                        { id: 'dormitoryAreaCurrent2', value: baseline.current_dormitory_area }
+                    ];
+                    
+                    currentEditableFields.forEach(field => {
+                        const element = document.getElementById(field.id);
+                        if (element) {
+                            element.value = safeToFixed(field.value);
+                        }
+                    });
+                    
+                    // 填充拟建成前期（第一个卡片 - 没有数字后缀）
+                    const plannedFields = [
+                        { id: 'teachingAreaPlanned', value: baseline.planned_teaching_area },
+                        { id: 'officeAreaPlanned', value: baseline.planned_office_area },
+                        { id: 'logisticsAreaPlanned', value: baseline.planned_logistics_area },
+                        { id: 'totalLivingAreaPlanned', value: baseline.planned_living_total_area },
+                        { id: 'dormitoryAreaPlanned', value: baseline.planned_dormitory_area }
+                    ];
+                    
+                    plannedFields.forEach(field => {
+                        const element = document.getElementById(field.id);
+                        if (element) {
+                            element.value = safeToFixed(field.value);
+                        }
+                    });
+                    
+                    // 填充拟建成在建（第二个卡片 - 后缀2）
+                    const underConstructionFields = [
+                        { id: 'teachingAreaPlanned2', value: baseline.under_construction_teaching_area },
+                        { id: 'officeAreaPlanned2', value: baseline.under_construction_office_area },
+                        { id: 'logisticsAreaPlanned2', value: baseline.under_construction_logistics_area },
+                        { id: 'totalLivingAreaPlanned2', value: baseline.under_construction_living_total_area },
+                        { id: 'dormitoryAreaPlanned2', value: baseline.under_construction_dormitory_area }
+                    ];
+                    
+                    underConstructionFields.forEach(field => {
+                        const element = document.getElementById(field.id);
+                        if (element) {
+                            element.value = safeToFixed(field.value);
+                        }
+                    });
+                    
+                    // 触发自动计算
+                    calculateCurrentAreas2();
+                    calculatePlannedAreas1();
+                    calculatePlannedAreas2();
+                    
+                    // 加载特殊补助
+                    await loadSpecialSubsidies(schoolName, username);
+                    
+                    console.log('✅ 底数数据(用户上次修改的值)已加载完成');
+                } else {
+                    console.log('ℹ️ 该学校暂无底数数据');
+                }
+
+            } catch (error) {
+                console.error('根据数据来源自动加载底数失败:', error);
+                // 不显示错误消息，因为这是自动操作
+            }
+        }
+
+        /**
          * 重置现状面积数据显示
          */
         function resetCurrentAreaData() {
@@ -1031,6 +1479,53 @@
             
             // 触发自动计算来更新计算字段
             calculateCurrentAreas2();
+        }
+
+        /**
+         * 重置拟建成面积数据
+         */
+        function resetPlannedAreaData() {
+            // 重置拟建成前期
+            const plannedFields = [
+                'teachingAreaPlanned',
+                'officeAreaPlanned',
+                'logisticsAreaPlanned',
+                'totalLivingAreaPlanned',
+                'dormitoryAreaPlanned'
+            ];
+            
+            plannedFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.value = '0.00';
+                }
+            });
+            
+            // 重置拟建成在建
+            const underConstructionFields = [
+                'teachingAreaPlanned2',
+                'officeAreaPlanned2',
+                'logisticsAreaPlanned2',
+                'totalLivingAreaPlanned2',
+                'dormitoryAreaPlanned2'
+            ];
+            
+            underConstructionFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.value = '0.00';
+                }
+            });
+            
+            // 触发自动计算
+            calculatePlannedAreas1();
+            calculatePlannedAreas2();
+            
+            // 清空特殊补助
+            const container = document.getElementById('specialSubsidiesArea');
+            if (container) {
+                container.innerHTML = '';
+            }
         }
 
         /**
@@ -1608,11 +2103,32 @@
                     if (dataSourceElement && baseline.data_source) {
                         dataSourceElement.value = baseline.data_source;
                         console.log('✅ 已填充数据来源:', baseline.data_source);
+                        
+                        // 🆕 从 preset 加载只读区域的数据
+                        await loadCurrentAreaPresetData(schoolName, baseline.data_source);
                     } else {
                         console.warn('⚠️ 未找到数据来源元素或数据为空');
+                        
+                        // 如果没有数据来源,重置只读区域为0
+                        const readonlyFields = [
+                            'teachingAreaCurrent',
+                            'officeAreaCurrent',
+                            'logisticsAreaCurrent',
+                            'totalLivingAreaCurrent',
+                            'dormitoryAreaCurrent',
+                            'otherLivingAreaCurrent',
+                            'currentBuildingArea'
+                        ];
+                        
+                        readonlyFields.forEach(fieldId => {
+                            const field = document.getElementById(fieldId);
+                            if (field) {
+                                field.value = '0.00';
+                            }
+                        });
                     }
                     
-                    // 填充现状面积（第二个数据卡片）
+                    // 填充现状面积（第二个数据卡片 - 可编辑区域）
                     const currentFields = [
                         { id: 'teachingAreaCurrent2', value: baseline.current_teaching_area },
                         { id: 'officeAreaCurrent2', value: baseline.current_office_area },

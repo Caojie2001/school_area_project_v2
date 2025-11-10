@@ -159,7 +159,7 @@
         /* 两列卡片布局 */
         .cards-row {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 0.8fr 1.2fr;
             gap: 20px;
             margin-bottom: 20px;
         }
@@ -561,6 +561,16 @@
             margin-top: 20px;
         }
         
+        /* 提示文字样式 */
+        .calculation-tips {
+            padding: 0;
+            margin-bottom: 15px;
+            color: #999999;
+            font-size: 13px;
+            line-height: 1.6;
+            text-align: center;
+        }
+        
         .result-card {
             margin-bottom: 20px;
             padding: 0;
@@ -921,7 +931,10 @@
                                             <thead>
                                                 <tr>
                                                     <th>学生规划参数</th>
-                                                    <th>计入测算的建筑面积</th>
+                                                    <th>
+                                                        计入测算的建筑面积
+                                                        <span class="info-icon" title="计入建筑面积(m)汇总">ⓘ</span>
+                                                    </th>
                                                     <th></th>
                                                 </tr>
                                             </thead>
@@ -955,6 +968,11 @@
                                         <div id="baselineAreasContent" class="baseline-areas-empty">
                                             请先选择学校
                                         </div>
+                                    </div>
+
+                                    <!-- 测算提示文字（仅在无测算结果时显示） -->
+                                    <div id="calculationTips" class="calculation-tips" style="display: none;">
+                                        请先添加测算条件，再点击【开始测算】按钮，每次测算结果都会自动保存至历史测算。
                                     </div>
 
                                     <!-- 测算结果显示区域 -->
@@ -1009,6 +1027,15 @@
                     await DataEntryNewManager.initialize();
                     console.log('数据填报模块初始化完成');
                 }
+                
+                // 初始化时显示提示文字
+                const tipsElement = document.getElementById('calculationTips');
+                if (tipsElement) {
+                    tipsElement.style.display = 'block';
+                }
+
+                // 初始化离开确认逻辑
+                initializeNavigationGuard();
 
             } catch (error) {
                 console.error('页面初始化失败:', error);
@@ -1017,6 +1044,73 @@
                 }
             }
         });
+
+        // 初始化导航守卫：当有测算结果时提示确认离开
+        function initializeNavigationGuard() {
+            // 等待侧边栏加载完成
+            const checkSidebar = setInterval(() => {
+                const menuItems = document.querySelectorAll('.menu-item');
+                if (menuItems.length > 0) {
+                    clearInterval(checkSidebar);
+                    
+                    // 为每个菜单项添加点击拦截
+                    menuItems.forEach(menuItem => {
+                        // 跳过当前页面的菜单项
+                        if (menuItem.id === 'menu-data-entry-new') {
+                            return;
+                        }
+                        
+                        menuItem.addEventListener('click', function(e) {
+                            // 检查是否有测算结果
+                            if (hasCalculationResults()) {
+                                // 阻止默认导航
+                                e.preventDefault();
+                                
+                                // 显示确认对话框
+                                if (confirm('离开后将重置数据，是否确认离开？')) {
+                                    // 用户确认离开，清除测算结果
+                                    latestCalculationResults = null;
+                                    
+                                    // 执行原始导航（直接使用 href，不管是否是 SPA 模式）
+                                    const href = this.getAttribute('href');
+                                    if (href) {
+                                        window.location.href = href;
+                                    }
+                                }
+                                // 用户取消，不做任何操作
+                            }
+                            // 如果没有测算结果，允许正常导航（不阻止默认行为）
+                        });
+                    });
+                    
+                    console.log('✅ 导航守卫已初始化');
+                }
+            }, 100);
+            
+            // 超时保护，5秒后停止检查
+            setTimeout(() => {
+                clearInterval(checkSidebar);
+            }, 5000);
+        }
+
+        // 检查是否有测算结果
+        function hasCalculationResults() {
+            // 方法1：检查全局变量
+            if (latestCalculationResults && latestCalculationResults.length > 0) {
+                return true;
+            }
+            
+            // 方法2：检查DOM中是否有结果卡片
+            const resultsContainer = document.getElementById('calculationResultsContainer');
+            if (resultsContainer) {
+                const resultCards = resultsContainer.querySelectorAll('.result-card');
+                if (resultCards.length > 0) {
+                    return true;
+                }
+            }
+            
+            return false;
+        }
 
         // 处理学校选择变化
         function handleSchoolChangeNew() {
@@ -1503,11 +1597,26 @@
                 return;
             }
             
-            // 重置学校选择
+            // 获取当前用户信息
+            const currentUser = typeof AuthManager !== 'undefined' ? AuthManager.getCurrentUser() : null;
+            const isSchoolUser = currentUser && currentUser.role === 'school';
+            
+            // 重置学校选择（学校用户不清空学校名称）
             const schoolSelect = document.getElementById('schoolNameNew');
             if (schoolSelect) {
-                schoolSelect.value = '';
-                handleSchoolChangeNew();
+                // 如果是学校用户，保留当前学校名称；否则清空
+                if (isSchoolUser && currentUser.school_name) {
+                    // 学校用户保持学校名称不变
+                    schoolSelect.value = currentUser.school_name;
+                    console.log('学校用户重置表单：保留学校名称', currentUser.school_name);
+                    // 触发学校变更事件以保持学校类型等信息
+                    handleSchoolChangeNew();
+                } else {
+                    // 管理员和建设中心用户清空学校选择
+                    schoolSelect.value = '';
+                    console.log('非学校用户重置表单：清空学校名称');
+                    handleSchoolChangeNew();
+                }
             }
             
             // 清空规划表格
@@ -1519,7 +1628,13 @@
             // 清空测算结果
             const resultsContainer = document.getElementById('calculationResultsContainer');
             if (resultsContainer) {
-                resultsContainer.innerHTML = '';
+                resultsContainer.innerHTML = '<div class="no-results">点击"开始测算"按钮查看结果</div>';
+            }
+            
+            // 显示提示文字
+            const tipsElement = document.getElementById('calculationTips');
+            if (tipsElement) {
+                tipsElement.style.display = 'block';
             }
             
             // 清空全局测算结果
@@ -1541,7 +1656,7 @@
             const rows = tbody?.querySelectorAll('tr[id^="row_"]');
             
             if (!rows || rows.length === 0) {
-                alert('请至少添加一条规划学生数记录');
+                alert('请至少添加一条测算条件，即学生规划参数和计入测算的建筑面积');
                 return;
             }
             
@@ -1697,6 +1812,11 @@
                         '现有其他生活面积': (currentTotalArea.living || 0) - (currentTotalArea.dormitory || 0),
                         '现有生活用房总面积': currentTotalArea.living || 0,
                         '现有后勤辅助用房面积': currentTotalArea.logistics || 0,
+                        // 添加建筑面积类型选择标志
+                        '是否包含现有面积': calc.areaTypes.includes('现状'),
+                        '是否包含初步计划面积': calc.areaTypes.includes('拟建成_前期'),
+                        '是否包含在建面积': calc.areaTypes.includes('拟建成_在建(含竣工)'),
+                        '是否包含特殊补助': calc.areaTypes.includes('特殊补助'),
                         // 添加原始数据，供后端分离现状和拟建成
                         'baseline': baseline ? {
                             current_teaching_area: baseline.current_teaching_area || 0,
@@ -1726,7 +1846,12 @@
                             博士生: studentData.full_time_doctor
                         },
                         现状面积: currentTotalArea,
-                        建筑面积类型: calc.areaTypes
+                        建筑面积类型: calc.areaTypes,
+                        选择标志: {
+                            现状: calc.areaTypes.includes('现状'),
+                            前期: calc.areaTypes.includes('拟建成_前期'),
+                            在建: calc.areaTypes.includes('拟建成_在建(含竣工)')
+                        }
                     });
                     
                     // 准备特殊补助数据（如果用户选中了特殊补助）
@@ -1756,6 +1881,44 @@
                     const calcResult = await calcResponse.json();
                     console.log(`API返回结果 [${calc.year} - ${calc.calculationCriteria}]:`, calcResult);
                     
+                    // 提取各个阶段的面积数据（根据选中的areaTypes决定是否包含）
+                    const includesCurrent = calc.areaTypes.includes('现状');
+                    const includesPreliminary = calc.areaTypes.includes('拟建成_前期');
+                    const includesUnderConstruction = calc.areaTypes.includes('拟建成_在建(含竣工)');
+                    
+                    const currentAreas = includesCurrent ? {
+                        teaching: parseFloat(baseline?.current_teaching_area || 0),
+                        office: parseFloat(baseline?.current_office_area || 0),
+                        dormitory: parseFloat(baseline?.current_dormitory_area || 0),
+                        living: parseFloat(baseline?.current_living_total_area || 0),
+                        otherLiving: parseFloat((baseline?.current_living_total_area || 0) - (baseline?.current_dormitory_area || 0)),
+                        logistics: parseFloat(baseline?.current_logistics_area || 0)
+                    } : {
+                        teaching: 0, office: 0, dormitory: 0, living: 0, otherLiving: 0, logistics: 0
+                    };
+                    
+                    const preliminaryAreas = includesPreliminary ? {
+                        teaching: parseFloat(baseline?.planned_teaching_area || 0),
+                        office: parseFloat(baseline?.planned_office_area || 0),
+                        dormitory: parseFloat(baseline?.planned_dormitory_area || 0),
+                        living: parseFloat(baseline?.planned_living_total_area || 0),
+                        otherLiving: parseFloat((baseline?.planned_living_total_area || 0) - (baseline?.planned_dormitory_area || 0)),
+                        logistics: parseFloat(baseline?.planned_logistics_area || 0)
+                    } : {
+                        teaching: 0, office: 0, dormitory: 0, living: 0, otherLiving: 0, logistics: 0
+                    };
+                    
+                    const underConstructionAreas = includesUnderConstruction ? {
+                        teaching: parseFloat(baseline?.under_construction_teaching_area || 0),
+                        office: parseFloat(baseline?.under_construction_office_area || 0),
+                        dormitory: parseFloat(baseline?.under_construction_dormitory_area || 0),
+                        living: parseFloat(baseline?.under_construction_living_total_area || 0),
+                        otherLiving: parseFloat((baseline?.under_construction_living_total_area || 0) - (baseline?.under_construction_dormitory_area || 0)),
+                        logistics: parseFloat(baseline?.under_construction_logistics_area || 0)
+                    } : {
+                        teaching: 0, office: 0, dormitory: 0, living: 0, otherLiving: 0, logistics: 0
+                    };
+                    
                     results.push({
                         year: calc.year,
                         criteria: calc.calculationCriteria,
@@ -1764,7 +1927,9 @@
                         studentData: studentData,
                         calculationData: {
                             ...calculationData,
-                            currentAreas: currentTotalArea  // 添加现状面积明细
+                            currentAreas: currentAreas,
+                            preliminaryAreas: preliminaryAreas,
+                            underConstructionAreas: underConstructionAreas
                         }
                     });
                     
@@ -1830,6 +1995,8 @@
         // 显示测算结果
         function displayCalculationResults(results) {
             const container = document.getElementById('calculationResultsContainer');
+            const tipsElement = document.getElementById('calculationTips');
+            
             if (!container) {
                 console.error('找不到测算结果容器');
                 return;
@@ -1840,7 +2007,16 @@
             
             if (results.length === 0) {
                 container.innerHTML = '<div class="no-results">暂无测算结果</div>';
+                // 显示提示文字
+                if (tipsElement) {
+                    tipsElement.style.display = 'block';
+                }
                 return;
+            }
+            
+            // 隐藏提示文字
+            if (tipsElement) {
+                tipsElement.style.display = 'none';
             }
             
             let html = '';

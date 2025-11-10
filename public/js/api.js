@@ -638,7 +638,15 @@ const DataManagementAPI = {
         }
         
         if (filters.user && filters.user !== 'all') {
-            params.push(`user=${encodeURIComponent(filters.user)}`);
+            // 处理数组和字符串两种情况
+            if (Array.isArray(filters.user)) {
+                // 数组：将每个用户名单独编码后用逗号连接
+                const encodedUsers = filters.user.map(u => encodeURIComponent(u)).join(',');
+                params.push(`user=${encodedUsers}`);
+            } else {
+                // 字符串：直接编码
+                params.push(`user=${encodeURIComponent(filters.user)}`);
+            }
         }
         
         if (filters.calculationCriteria && filters.calculationCriteria !== 'all') {

@@ -83,7 +83,17 @@ function generateFormattedResultSheet(record) {
     const totalGapWithSpecial = parseFloat(record.total_area_gap_with_subsidy) || (totalGapWithoutSpecial + specialSubsidyArea);
     
     // 生成测算时间字符串
-    const calcTime = new Date(record.created_at || new Date()).toLocaleString('zh-CN', { 
+    // 处理时区问题:确保数据库时间被正确解析为北京时间
+    let recordDate;
+    if (record.created_at) {
+        const dateStr = record.created_at.toString().replace(' ', 'T');
+        recordDate = dateStr.includes('+') || dateStr.includes('Z') 
+            ? new Date(dateStr) 
+            : new Date(dateStr + '+08:00');
+    } else {
+        recordDate = new Date();
+    }
+    const calcTime = recordDate.toLocaleString('zh-CN', { 
         year: 'numeric', 
         month: '2-digit', 
         day: '2-digit', 
@@ -215,31 +225,45 @@ function generateWideTableSheet(records) {
         if (record.include_special_subsidy) areaTypes.push('特殊补助');
         const areaTypeText = areaTypes.join('、');
         
-        // 现状面积
-        const teachingCurrent = parseFloat(record.teaching_area_current) || 0;
-        const officeCurrent = parseFloat(record.office_area_current) || 0;
-        const livingCurrent = parseFloat(record.total_living_area_current) || 0;
-        const dormitoryCurrent = parseFloat(record.dormitory_area_current) || 0;
-        const otherLivingCurrent = parseFloat(record.other_living_area_current) || 0;
-        const logisticsCurrent = parseFloat(record.logistics_area_current) || 0;
+        // 检查是否选中了各个类型
+        const includesCurrent = record.include_current_area ? true : false;
+        const includesPreliminary = record.include_preliminary_area ? true : false;
+        const includesUnderConstruction = record.include_under_construction_area ? true : false;
+        
+        // 现状面积（如果未选中则为0）
+        const teachingCurrent = includesCurrent ? (parseFloat(record.teaching_area_current) || 0) : 0;
+        const officeCurrent = includesCurrent ? (parseFloat(record.office_area_current) || 0) : 0;
+        const livingCurrent = includesCurrent ? (parseFloat(record.total_living_area_current) || 0) : 0;
+        const dormitoryCurrent = includesCurrent ? (parseFloat(record.dormitory_area_current) || 0) : 0;
+        const otherLivingCurrent = includesCurrent ? (parseFloat(record.other_living_area_current) || 0) : 0;
+        const logisticsCurrent = includesCurrent ? (parseFloat(record.logistics_area_current) || 0) : 0;
         const totalCurrent = teachingCurrent + officeCurrent + livingCurrent + logisticsCurrent;
         
-        // 拟建成面积
-        const teachingPlanned = parseFloat(record.teaching_area_planned) || 0;
-        const officePlanned = parseFloat(record.office_area_planned) || 0;
-        const livingPlanned = parseFloat(record.total_living_area_planned) || 0;
-        const dormitoryPlanned = parseFloat(record.dormitory_area_planned) || 0;
-        const otherLivingPlanned = parseFloat(record.other_living_area_planned) || 0;
-        const logisticsPlanned = parseFloat(record.logistics_area_planned) || 0;
-        const totalPlanned = teachingPlanned + officePlanned + livingPlanned + logisticsPlanned;
+        // 拟建成_前期面积（如果未选中则为0）
+        const teachingPreliminary = includesPreliminary ? (parseFloat(record.teaching_area_preliminary) || 0) : 0;
+        const officePreliminary = includesPreliminary ? (parseFloat(record.office_area_preliminary) || 0) : 0;
+        const livingPreliminary = includesPreliminary ? (parseFloat(record.total_living_area_preliminary) || 0) : 0;
+        const dormitoryPreliminary = includesPreliminary ? (parseFloat(record.dormitory_area_preliminary) || 0) : 0;
+        const otherLivingPreliminary = includesPreliminary ? (parseFloat(record.other_living_area_preliminary) || 0) : 0;
+        const logisticsPreliminary = includesPreliminary ? (parseFloat(record.logistics_area_preliminary) || 0) : 0;
+        const totalPreliminary = teachingPreliminary + officePreliminary + livingPreliminary + logisticsPreliminary;
         
-        // 汇总面积
-        const teachingTotal = parseFloat(record.teaching_area_total) || 0;
-        const officeTotal = parseFloat(record.office_area_total) || 0;
-        const livingTotal = parseFloat(record.total_living_area_total) || 0;
-        const dormitoryTotal = parseFloat(record.dormitory_area_total) || 0;
-        const otherLivingTotal = parseFloat(record.other_living_area_total) || 0;
-        const logisticsTotal = parseFloat(record.logistics_area_total) || 0;
+        // 拟建成_在建(含竣工)面积（如果未选中则为0）
+        const teachingUnderConstruction = includesUnderConstruction ? (parseFloat(record.teaching_area_under_construction) || 0) : 0;
+        const officeUnderConstruction = includesUnderConstruction ? (parseFloat(record.office_area_under_construction) || 0) : 0;
+        const livingUnderConstruction = includesUnderConstruction ? (parseFloat(record.total_living_area_under_construction) || 0) : 0;
+        const dormitoryUnderConstruction = includesUnderConstruction ? (parseFloat(record.dormitory_area_under_construction) || 0) : 0;
+        const otherLivingUnderConstruction = includesUnderConstruction ? (parseFloat(record.other_living_area_under_construction) || 0) : 0;
+        const logisticsUnderConstruction = includesUnderConstruction ? (parseFloat(record.logistics_area_under_construction) || 0) : 0;
+        const totalUnderConstruction = teachingUnderConstruction + officeUnderConstruction + livingUnderConstruction + logisticsUnderConstruction;
+        
+        // 汇总面积(现状+前期+在建，未选中的已经是0)
+        const teachingTotal = teachingCurrent + teachingPreliminary + teachingUnderConstruction;
+        const officeTotal = officeCurrent + officePreliminary + officeUnderConstruction;
+        const livingTotal = livingCurrent + livingPreliminary + livingUnderConstruction;
+        const dormitoryTotal = dormitoryCurrent + dormitoryPreliminary + dormitoryUnderConstruction;
+        const otherLivingTotal = otherLivingCurrent + otherLivingPreliminary + otherLivingUnderConstruction;
+        const logisticsTotal = logisticsCurrent + logisticsPreliminary + logisticsUnderConstruction;
         const totalSum = teachingTotal + officeTotal + livingTotal + logisticsTotal;
         
         // 测算面积
@@ -304,13 +328,20 @@ function generateWideTableSheet(records) {
             '其中:其他生活用房面积(㎡)_现状': otherLivingCurrent.toFixed(2),
             '后勤辅助用房面积(㎡)_现状': logisticsCurrent.toFixed(2),
             '建筑总面积(㎡)_现状': totalCurrent.toFixed(2),
-            '教学及辅助用房面积(㎡)_拟建成': teachingPlanned.toFixed(2),
-            '办公用房面积(㎡)_拟建成': officePlanned.toFixed(2),
-            '生活用房总面积(㎡)_拟建成': livingPlanned.toFixed(2),
-            '其中:学生宿舍面积(㎡)_拟建成': dormitoryPlanned.toFixed(2),
-            '其中:其他生活用房面积(㎡)_拟建成': otherLivingPlanned.toFixed(2),
-            '后勤辅助用房面积(㎡)_拟建成': logisticsPlanned.toFixed(2),
-            '建筑总面积(㎡)_拟建成': totalPlanned.toFixed(2),
+            '教学及辅助用房面积(㎡)_拟建成_前期': teachingPreliminary.toFixed(2),
+            '办公用房面积(㎡)_拟建成_前期': officePreliminary.toFixed(2),
+            '生活用房总面积(㎡)_拟建成_前期': livingPreliminary.toFixed(2),
+            '其中:学生宿舍面积(㎡)_拟建成_前期': dormitoryPreliminary.toFixed(2),
+            '其中:其他生活用房面积(㎡)_拟建成_前期': otherLivingPreliminary.toFixed(2),
+            '后勤辅助用房面积(㎡)_拟建成_前期': logisticsPreliminary.toFixed(2),
+            '建筑总面积(㎡)_拟建成_前期': totalPreliminary.toFixed(2),
+            '教学及辅助用房面积(㎡)_拟建成_在建(含竣工)': teachingUnderConstruction.toFixed(2),
+            '办公用房面积(㎡)_拟建成_在建(含竣工)': officeUnderConstruction.toFixed(2),
+            '生活用房总面积(㎡)_拟建成_在建(含竣工)': livingUnderConstruction.toFixed(2),
+            '其中:学生宿舍面积(㎡)_拟建成_在建(含竣工)': dormitoryUnderConstruction.toFixed(2),
+            '其中:其他生活用房面积(㎡)_拟建成_在建(含竣工)': otherLivingUnderConstruction.toFixed(2),
+            '后勤辅助用房面积(㎡)_拟建成_在建(含竣工)': logisticsUnderConstruction.toFixed(2),
+            '建筑总面积(㎡)_拟建成_在建(含竣工)': totalUnderConstruction.toFixed(2),
             '教学及辅助用房面积(㎡)_汇总': teachingTotal.toFixed(2),
             '办公用房面积(㎡)_汇总': officeTotal.toFixed(2),
             '生活用房总面积(㎡)_汇总': livingTotal.toFixed(2),
@@ -718,15 +749,47 @@ async function downloadCalculationResults(req, res) {
             const areaTypes = item.areaTypes || [];
             const areaTypeText = areaTypes.length > 0 ? areaTypes.join('、') : '未选择';
             
-            // 获取各类现状面积
+            // 根据选择的建筑面积类型计算汇总面积
             const currentAreas = calculationData.currentAreas || {};
-            const teachingCurrent = currentAreas.teaching || 0;
-            const officeCurrent = currentAreas.office || 0;
-            const livingCurrent = currentAreas.living || 0;
-            const dormitoryCurrent = currentAreas.dormitory || 0;
-            const otherLivingCurrent = currentAreas.otherLiving || 0;
-            const logisticsCurrent = currentAreas.logistics || 0;
-            const subtotalCurrent = teachingCurrent + officeCurrent + livingCurrent + logisticsCurrent;
+            const preliminaryAreas = calculationData.preliminaryAreas || {};
+            const underConstructionAreas = calculationData.underConstructionAreas || {};
+            
+            const includesCurrentArea = areaTypes.includes('现状');
+            const includesPreliminaryArea = areaTypes.includes('拟建成_前期');
+            const includesUnderConstructionArea = areaTypes.includes('拟建成_在建(含竣工)');
+            
+            // 计算各类型的汇总值（根据选择的类型）
+            const teachingTotal = 
+                (includesCurrentArea ? (currentAreas.teaching || 0) : 0) +
+                (includesPreliminaryArea ? (preliminaryAreas.teaching || 0) : 0) +
+                (includesUnderConstructionArea ? (underConstructionAreas.teaching || 0) : 0);
+            
+            const officeTotal = 
+                (includesCurrentArea ? (currentAreas.office || 0) : 0) +
+                (includesPreliminaryArea ? (preliminaryAreas.office || 0) : 0) +
+                (includesUnderConstructionArea ? (underConstructionAreas.office || 0) : 0);
+            
+            const dormitoryTotal = 
+                (includesCurrentArea ? (currentAreas.dormitory || 0) : 0) +
+                (includesPreliminaryArea ? (preliminaryAreas.dormitory || 0) : 0) +
+                (includesUnderConstructionArea ? (underConstructionAreas.dormitory || 0) : 0);
+            
+            const livingTotal = 
+                (includesCurrentArea ? (currentAreas.living || 0) : 0) +
+                (includesPreliminaryArea ? (preliminaryAreas.living || 0) : 0) +
+                (includesUnderConstructionArea ? (underConstructionAreas.living || 0) : 0);
+            
+            const otherLivingTotal = 
+                (includesCurrentArea ? (currentAreas.otherLiving || 0) : 0) +
+                (includesPreliminaryArea ? (preliminaryAreas.otherLiving || 0) : 0) +
+                (includesUnderConstructionArea ? (underConstructionAreas.otherLiving || 0) : 0);
+            
+            const logisticsTotal = 
+                (includesCurrentArea ? (currentAreas.logistics || 0) : 0) +
+                (includesPreliminaryArea ? (preliminaryAreas.logistics || 0) : 0) +
+                (includesUnderConstructionArea ? (underConstructionAreas.logistics || 0) : 0);
+            
+            const subtotalTotal = teachingTotal + officeTotal + livingTotal + logisticsTotal;
             
             // 获取测算结果
             const teachingRequired = result['总应配教学及辅助用房(A)'] || 0;
@@ -777,13 +840,13 @@ async function downloadCalculationResults(req, res) {
                 ['测算结果'],
                 ['', '建筑面积(m²)_汇总', '建筑面积(m²)_测算', '建筑面积(m²)_缺额'],
                 ['用房类型', 'A', 'B', 'B-A'],
-                ['教学及辅助用房', teachingCurrent.toFixed(2), teachingRequired.toFixed(2), teachingGap.toFixed(2)],
-                ['办公用房', officeCurrent.toFixed(2), officeRequired.toFixed(2), officeGap.toFixed(2)],
-                ['生活配套用房', livingCurrent.toFixed(2), livingRequired.toFixed(2), livingGap.toFixed(2)],
-                ['其中:学生宿舍', dormitoryCurrent.toFixed(2), dormitoryRequired.toFixed(2), dormitoryGap.toFixed(2)],
-                ['其中:其他生活用房', otherLivingCurrent.toFixed(2), otherLivingRequired.toFixed(2), otherLivingGap.toFixed(2)],
-                ['后勤辅助用房', logisticsCurrent.toFixed(2), logisticsRequired.toFixed(2), logisticsGap.toFixed(2)],
-                ['小计', subtotalCurrent.toFixed(2), subtotalRequired.toFixed(2), subtotalGap.toFixed(2)],
+                ['教学及辅助用房', teachingTotal.toFixed(2), teachingRequired.toFixed(2), teachingGap.toFixed(2)],
+                ['办公用房', officeTotal.toFixed(2), officeRequired.toFixed(2), officeGap.toFixed(2)],
+                ['生活配套用房', livingTotal.toFixed(2), livingRequired.toFixed(2), livingGap.toFixed(2)],
+                ['其中:学生宿舍', dormitoryTotal.toFixed(2), dormitoryRequired.toFixed(2), dormitoryGap.toFixed(2)],
+                ['其中:其他生活用房', otherLivingTotal.toFixed(2), otherLivingRequired.toFixed(2), otherLivingGap.toFixed(2)],
+                ['后勤辅助用房', logisticsTotal.toFixed(2), logisticsRequired.toFixed(2), logisticsGap.toFixed(2)],
+                ['小计', subtotalTotal.toFixed(2), subtotalRequired.toFixed(2), subtotalGap.toFixed(2)],
                 [],
                 ['建筑总面积(m²)_缺额_不含特殊补助', '', 'C', totalGapWithoutSpecial.toFixed(2)],
                 ['特殊补助建筑面积(m²)', '', 'D', specialSubsidyArea.toFixed(2)],
@@ -886,7 +949,7 @@ async function downloadCalculationResults(req, res) {
         // 多条测算记录时，生成汇总表
         console.log('生成测算汇总表...');
         
-        // 汇总表表头（完整版，与历史测算批量下载一致）
+        // 汇总表表头(与data-management保持一致的61列结构)
         const summaryHeaders = [
             '单位/学校(机构)名称(章)',
             '院校类别',
@@ -901,13 +964,20 @@ async function downloadCalculationResults(req, res) {
             '其中:其他生活用房面积(㎡)_现状',
             '后勤辅助用房面积(㎡)_现状',
             '建筑总面积(㎡)_现状',
-            '教学及辅助用房面积(㎡)_拟建成',
-            '办公用房面积(㎡)_拟建成',
-            '生活用房总面积(㎡)_拟建成',
-            '其中:学生宿舍面积(㎡)_拟建成',
-            '其中:其他生活用房面积(㎡)_拟建成',
-            '后勤辅助用房面积(㎡)_拟建成',
-            '建筑总面积(㎡)_拟建成',
+            '教学及辅助用房面积(㎡)_拟建成_前期',
+            '办公用房面积(㎡)_拟建成_前期',
+            '生活用房总面积(㎡)_拟建成_前期',
+            '其中:学生宿舍面积(㎡)_拟建成_前期',
+            '其中:其他生活用房面积(㎡)_拟建成_前期',
+            '后勤辅助用房面积(㎡)_拟建成_前期',
+            '建筑总面积(㎡)_拟建成_前期',
+            '教学及辅助用房面积(㎡)_拟建成_在建(含竣工)',
+            '办公用房面积(㎡)_拟建成_在建(含竣工)',
+            '生活用房总面积(㎡)_拟建成_在建(含竣工)',
+            '其中:学生宿舍面积(㎡)_拟建成_在建(含竣工)',
+            '其中:其他生活用房面积(㎡)_拟建成_在建(含竣工)',
+            '后勤辅助用房面积(㎡)_拟建成_在建(含竣工)',
+            '建筑总面积(㎡)_拟建成_在建(含竣工)',
             '教学及辅助用房面积(㎡)_汇总',
             '办公用房面积(㎡)_汇总',
             '生活用房总面积(㎡)_汇总',
@@ -952,63 +1022,45 @@ async function downloadCalculationResults(req, res) {
             const studentData = item.studentData;
             const areaTypes = item.areaTypes || [];
             const calculationData = item.calculationData || {};
-            const baseline = calculationData.baseline || {};
+            const currentAreas = calculationData.currentAreas || {};
+            const preliminaryAreas = calculationData.preliminaryAreas || {};
+            const underConstructionAreas = calculationData.underConstructionAreas || {};
             
-            // 调试：检查result中的特殊补助数据
-            console.log('测算结果中的特殊补助数据:', {
-                特殊补助总面积: result['特殊补助总面积'],
-                特殊补助项目数: result['特殊补助项目数'],
-                特殊补助明细: result['特殊补助明细']
-            });
-            
-            // 根据用户选择的areaTypes分别计算现状和拟建成
-            let teachingCurrent = 0, officeCurrent = 0, livingCurrent = 0;
-            let dormitoryCurrent = 0, logisticsCurrent = 0;
-            let teachingPlanned = 0, officePlanned = 0, livingPlanned = 0;
-            let dormitoryPlanned = 0, logisticsPlanned = 0;
-            
-            // 现状：如果选了"现状"
-            if (areaTypes.includes('现状')) {
-                teachingCurrent = parseFloat(baseline.current_teaching_area || 0);
-                officeCurrent = parseFloat(baseline.current_office_area || 0);
-                dormitoryCurrent = parseFloat(baseline.current_dormitory_area || 0);
-                livingCurrent = parseFloat(baseline.current_living_total_area || 0);
-                logisticsCurrent = parseFloat(baseline.current_logistics_area || 0);
-            }
-            
-            // 拟建成：如果选了"拟建成_前期"或"拟建成_在建(含竣工)"
-            if (areaTypes.includes('拟建成_前期')) {
-                teachingPlanned += parseFloat(baseline.planned_teaching_area || 0);
-                officePlanned += parseFloat(baseline.planned_office_area || 0);
-                dormitoryPlanned += parseFloat(baseline.planned_dormitory_area || 0);
-                livingPlanned += parseFloat(baseline.planned_living_total_area || 0);
-                logisticsPlanned += parseFloat(baseline.planned_logistics_area || 0);
-            }
-            if (areaTypes.includes('拟建成_在建(含竣工)')) {
-                teachingPlanned += parseFloat(baseline.under_construction_teaching_area || 0);
-                officePlanned += parseFloat(baseline.under_construction_office_area || 0);
-                dormitoryPlanned += parseFloat(baseline.under_construction_dormitory_area || 0);
-                livingPlanned += parseFloat(baseline.under_construction_living_total_area || 0);
-                logisticsPlanned += parseFloat(baseline.under_construction_logistics_area || 0);
-            }
-            
-            // 计算其他生活用房（生活用房总面积 - 学生宿舍）
-            const otherLivingCurrent = livingCurrent - dormitoryCurrent;
-            const otherLivingPlanned = livingPlanned - dormitoryPlanned;
-            
-            // 现状总计
+            // 现状面积
+            const teachingCurrent = currentAreas.teaching || 0;
+            const officeCurrent = currentAreas.office || 0;
+            const livingCurrent = currentAreas.living || 0;
+            const dormitoryCurrent = currentAreas.dormitory || 0;
+            const otherLivingCurrent = currentAreas.otherLiving || 0;
+            const logisticsCurrent = currentAreas.logistics || 0;
             const totalCurrent = teachingCurrent + officeCurrent + livingCurrent + logisticsCurrent;
-            // 拟建成总计
-            const totalPlanned = teachingPlanned + officePlanned + livingPlanned + logisticsPlanned;
             
-            // 汇总面积（现状 + 拟建成）
-            const teachingTotal = teachingCurrent + teachingPlanned;
-            const officeTotal = officeCurrent + officePlanned;
-            const livingTotal = livingCurrent + livingPlanned;
-            const dormitoryTotal = dormitoryCurrent + dormitoryPlanned;
-            const otherLivingTotal = otherLivingCurrent + otherLivingPlanned;
-            const logisticsTotal = logisticsCurrent + logisticsPlanned;
-            const totalSum = teachingTotal + officeTotal + livingTotal + logisticsTotal;
+            // 拟建成_前期面积
+            const teachingPreliminary = preliminaryAreas.teaching || 0;
+            const officePreliminary = preliminaryAreas.office || 0;
+            const livingPreliminary = preliminaryAreas.living || 0;
+            const dormitoryPreliminary = preliminaryAreas.dormitory || 0;
+            const otherLivingPreliminary = preliminaryAreas.otherLiving || 0;
+            const logisticsPreliminary = preliminaryAreas.logistics || 0;
+            const totalPreliminary = teachingPreliminary + officePreliminary + livingPreliminary + logisticsPreliminary;
+            
+            // 拟建成_在建(含竣工)面积
+            const teachingUnderConstruction = underConstructionAreas.teaching || 0;
+            const officeUnderConstruction = underConstructionAreas.office || 0;
+            const livingUnderConstruction = underConstructionAreas.living || 0;
+            const dormitoryUnderConstruction = underConstructionAreas.dormitory || 0;
+            const otherLivingUnderConstruction = underConstructionAreas.otherLiving || 0;
+            const logisticsUnderConstruction = underConstructionAreas.logistics || 0;
+            const totalUnderConstruction = teachingUnderConstruction + officeUnderConstruction + livingUnderConstruction + logisticsUnderConstruction;
+            
+            // 汇总面积(现状+前期+在建)
+            const teachingTotal = teachingCurrent + teachingPreliminary + teachingUnderConstruction;
+            const officeTotal = officeCurrent + officePreliminary + officeUnderConstruction;
+            const livingTotal = livingCurrent + livingPreliminary + livingUnderConstruction;
+            const dormitoryTotal = dormitoryCurrent + dormitoryPreliminary + dormitoryUnderConstruction;
+            const otherLivingTotal = otherLivingCurrent + otherLivingPreliminary + otherLivingUnderConstruction;
+            const logisticsTotal = logisticsCurrent + logisticsPreliminary + logisticsUnderConstruction;
+            const totalSum = totalCurrent + totalPreliminary + totalUnderConstruction;
             
             // 测算面积
             const teachingRequired = result['总应配教学及辅助用房(A)'] || 0;
@@ -1054,7 +1106,7 @@ async function downloadCalculationResults(req, res) {
                 item.criteria,
                 areaTypes.join('、'),
                 displayNameToUse,
-                // 现状面积
+                // 现状面积(7列)
                 teachingCurrent.toFixed(2),
                 officeCurrent.toFixed(2),
                 livingCurrent.toFixed(2),
@@ -1062,15 +1114,23 @@ async function downloadCalculationResults(req, res) {
                 otherLivingCurrent.toFixed(2),
                 logisticsCurrent.toFixed(2),
                 totalCurrent.toFixed(2),
-                // 拟建成面积
-                teachingPlanned.toFixed(2),
-                officePlanned.toFixed(2),
-                livingPlanned.toFixed(2),
-                dormitoryPlanned.toFixed(2),
-                otherLivingPlanned.toFixed(2),
-                logisticsPlanned.toFixed(2),
-                totalPlanned.toFixed(2),
-                // 汇总面积
+                // 拟建成_前期面积(7列)
+                teachingPreliminary.toFixed(2),
+                officePreliminary.toFixed(2),
+                livingPreliminary.toFixed(2),
+                dormitoryPreliminary.toFixed(2),
+                otherLivingPreliminary.toFixed(2),
+                logisticsPreliminary.toFixed(2),
+                totalPreliminary.toFixed(2),
+                // 拟建成_在建(含竣工)面积(7列)
+                teachingUnderConstruction.toFixed(2),
+                officeUnderConstruction.toFixed(2),
+                livingUnderConstruction.toFixed(2),
+                dormitoryUnderConstruction.toFixed(2),
+                otherLivingUnderConstruction.toFixed(2),
+                logisticsUnderConstruction.toFixed(2),
+                totalUnderConstruction.toFixed(2),
+                // 汇总面积(7列)
                 teachingTotal.toFixed(2),
                 officeTotal.toFixed(2),
                 livingTotal.toFixed(2),
@@ -1078,7 +1138,7 @@ async function downloadCalculationResults(req, res) {
                 otherLivingTotal.toFixed(2),
                 logisticsTotal.toFixed(2),
                 totalSum.toFixed(2),
-                // 测算面积
+                // 测算面积(7列)
                 teachingRequired.toFixed(2),
                 officeRequired.toFixed(2),
                 livingRequired.toFixed(2),
@@ -1086,7 +1146,7 @@ async function downloadCalculationResults(req, res) {
                 otherLivingRequired.toFixed(2),
                 logisticsRequired.toFixed(2),
                 totalRequired.toFixed(2),
-                // 缺额
+                // 缺额(8列)
                 teachingGap.toFixed(2),
                 officeGap.toFixed(2),
                 livingGap.toFixed(2),
@@ -1095,10 +1155,10 @@ async function downloadCalculationResults(req, res) {
                 logisticsGap.toFixed(2),
                 totalGapWithoutSpecial.toFixed(2),
                 totalGapWithSpecial.toFixed(2),
-                // 特殊补助
+                // 特殊补助(2列)
                 specialSubsidyCount,
                 specialSubsidyArea.toFixed(2),
-                // 学生数
+                // 学生数(10列)
                 specialist,
                 undergraduate,
                 master,
@@ -1200,6 +1260,11 @@ async function batchDownload(req, res) {
         let schoolName = school && school !== 'all' ? school : null;
         let criteriaFilter = calculationCriteria && calculationCriteria !== 'all' ? calculationCriteria : null;
 
+        // 如果 userFilter 是逗号分隔的字符串,转换为数组(容错处理)
+        if (userFilter && typeof userFilter === 'string' && userFilter.includes(',')) {
+            userFilter = userFilter.split(',').map(u => u.trim());
+        }
+
         // 获取筛选条件下的所有记录
         const yearFilter = year && year !== 'all' ? parseInt(year) : null;
         let allRecords = await dataService.getAllSchoolRecords(yearFilter, schoolName, userRole, username, userSchoolName, userFilter, criteriaFilter);
@@ -1241,13 +1306,41 @@ async function batchDownload(req, res) {
             // 为每条记录生成测算结果表
             for (let recordIndex = 0; recordIndex < records.length; recordIndex++) {
                 const record = records[recordIndex];
-                const recordDate = record.created_at ? new Date(record.created_at) : new Date();
-                const timeStr = recordDate.getFullYear().toString() + 
-                               (recordDate.getMonth() + 1).toString().padStart(2, '0') + 
-                               recordDate.getDate().toString().padStart(2, '0') + 
-                               recordDate.getHours().toString().padStart(2, '0') + 
-                               recordDate.getMinutes().toString().padStart(2, '0') + 
-                               recordDate.getSeconds().toString().padStart(2, '0');
+                // 处理时区问题:确保时间正确显示为北京时间(仅用于文件名)
+                let recordDate;
+                if (record.created_at) {
+                    // mysql2 返回的可能是 Date 对象或字符串
+                    if (record.created_at instanceof Date) {
+                        // 如果已经是 Date 对象,直接使用
+                        recordDate = record.created_at;
+                    } else {
+                        // 如果是字符串,手动添加时区信息
+                        const dateStr = record.created_at.toString().replace(' ', 'T');
+                        recordDate = dateStr.includes('+') || dateStr.includes('Z') 
+                            ? new Date(dateStr) 
+                            : new Date(dateStr + '+08:00');
+                    }
+                } else {
+                    recordDate = new Date();
+                }
+                
+                // 使用 toLocaleString 确保获取北京时间,然后手动解析(用于文件名)
+                const beijingTimeStr = recordDate.toLocaleString('zh-CN', {
+                    timeZone: 'Asia/Shanghai',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
+                // 解析格式: "2025/11/07 11:08:30"
+                const [datePart, timePart] = beijingTimeStr.split(' ');
+                const [year, month, day] = datePart.split('/');
+                const [hour, minute, second] = timePart.split(':');
+                const timeStr = year + month.padStart(2, '0') + day.padStart(2, '0') + 
+                               hour.padStart(2, '0') + minute.padStart(2, '0') + second.padStart(2, '0');
                 
                 const recordFileName = `${schoolName}_${record.year}年_${timeStr}_${recordIndex + 1}_测算结果.xlsx`;
                 const recordFilePath = path.join(schoolDir, recordFileName);
@@ -1257,6 +1350,8 @@ async function batchDownload(req, res) {
                 const formattedSheet = generateFormattedResultSheet(record);
                 XLSX.utils.book_append_sheet(wb, formattedSheet, "建筑规模测算结果");
                 XLSX.writeFile(wb, recordFilePath);
+                
+                // 注意: 不再手动设置文件时间,让所有文件保持下载时刻的时间戳
             }
 
             // 生成该学校的测算汇总表
@@ -1284,16 +1379,28 @@ async function batchDownload(req, res) {
         
         XLSX.writeFile(allSummaryWb, allSummaryFilePath);
 
+        // 统一设置所有文件和文件夹的修改时间为当前北京时间
+        // 正确获取北京时间: UTC时间 + 8小时
+        const now = new Date();
+        const beijingTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+        
+        console.log(`当前UTC时间: ${now.toISOString()}`);
+        console.log(`设置文件时间为北京时间: ${beijingTime.toISOString()} (${beijingTime.toLocaleString('zh-CN', { hour12: false })})`);
+
         // 打包成zip
-        const finalZipFileName = `批量导出.zip`;
+        const finalZipFileName = `测算结果_批量下载.zip`;
         const finalZipPath = path.join(outputDir, finalZipFileName);
         
         await new Promise((resolve, reject) => {
             const output = fs.createWriteStream(finalZipPath);
-            const archive = archiver('zip', { zlib: { level: 9 } });
+            const archive = archiver('zip', { 
+                zlib: { level: 9 },
+                // 强制使用指定的修改时间
+                statConcurrency: 1
+            });
 
             output.on('close', () => {
-                console.log(`批量导出.zip 已创建，大小: ${archive.pointer()} bytes`);
+                console.log(`测算结果_批量下载.zip 已创建，大小: ${archive.pointer()} bytes`);
                 resolve();
             });
 
@@ -1303,14 +1410,26 @@ async function batchDownload(req, res) {
 
             archive.pipe(output);
             
-            // 添加所有学校的文件夹
+            // 手动添加所有学校的文件，并指定修改时间
             for (const schoolName of Object.keys(schoolGroups)) {
                 const schoolDir = path.join(tempDir, schoolName);
-                archive.directory(schoolDir, schoolName);
+                const files = fs.readdirSync(schoolDir);
+                
+                for (const file of files) {
+                    const filePath = path.join(schoolDir, file);
+                    // 添加文件并指定修改时间为北京时间
+                    archive.file(filePath, { 
+                        name: `${schoolName}/${file}`,
+                        date: beijingTime  // 强制使用北京时间
+                    });
+                }
             }
             
-            // 添加总汇总表
-            archive.file(allSummaryFilePath, { name: allSummaryFileName });
+            // 添加总汇总表，也指定修改时间
+            archive.file(allSummaryFilePath, { 
+                name: allSummaryFileName,
+                date: beijingTime  // 强制使用北京时间
+            });
             
             archive.finalize();
         });
@@ -1363,8 +1482,16 @@ async function downloadRecord(req, res) {
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, '测算结果');
         
-        // 生成文件名
-        const recordDate = recordData.created_at ? new Date(recordData.created_at) : new Date();
+        // 生成文件名 - 处理时区问题
+        let recordDate;
+        if (recordData.created_at) {
+            const dateStr = recordData.created_at.toString().replace(' ', 'T');
+            recordDate = dateStr.includes('+') || dateStr.includes('Z') 
+                ? new Date(dateStr) 
+                : new Date(dateStr + '+08:00');
+        } else {
+            recordDate = new Date();
+        }
         const timeStr = recordDate.getFullYear().toString() + 
                        (recordDate.getMonth() + 1).toString().padStart(2, '0') + 
                        recordDate.getDate().toString().padStart(2, '0') + 

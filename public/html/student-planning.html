@@ -665,19 +665,19 @@
                         </div>
                         <div class="form-group" style="flex: 1; margin-bottom: 0;">
                             <label for="fullTimeSpecialist">专科全日制学生数(人)</label>
-                            <input type="number" id="fullTimeSpecialist" name="fullTimeSpecialist" value="0" class="form-control student-number-input" oninput="calculateTotalStudents(); validateStudentInput(this);" style="background: white; border: 1px solid #ddd;">
+                            <input type="number" id="fullTimeSpecialist" name="fullTimeSpecialist" value="0" min="0" max="9999999999" class="form-control student-number-input" oninput="validateStudentInput(this); calculateTotalStudents();" style="background: white; border: 1px solid #ddd;">
                         </div>
                         <div class="form-group" style="flex: 1; margin-bottom: 0;">
                             <label for="fullTimeUndergraduate">本科全日制学生数(人)</label>
-                            <input type="number" id="fullTimeUndergraduate" name="fullTimeUndergraduate" value="0" class="form-control student-number-input" oninput="calculateTotalStudents(); validateStudentInput(this);" style="background: white; border: 1px solid #ddd;">
+                            <input type="number" id="fullTimeUndergraduate" name="fullTimeUndergraduate" value="0" min="0" max="9999999999" class="form-control student-number-input" oninput="validateStudentInput(this); calculateTotalStudents();" style="background: white; border: 1px solid #ddd;">
                         </div>
                         <div class="form-group" style="flex: 1; margin-bottom: 0;">
                             <label for="fullTimeMaster">硕士全日制学生数(人)</label>
-                            <input type="number" id="fullTimeMaster" name="fullTimeMaster" value="0" class="form-control student-number-input" oninput="calculateTotalStudents(); validateStudentInput(this);" style="background: white; border: 1px solid #ddd;">
+                            <input type="number" id="fullTimeMaster" name="fullTimeMaster" value="0" min="0" max="9999999999" class="form-control student-number-input" oninput="validateStudentInput(this); calculateTotalStudents();" style="background: white; border: 1px solid #ddd;">
                         </div>
                         <div class="form-group" style="flex: 1; margin-bottom: 0;">
                             <label for="fullTimeDoctor">博士全日制学生数(人)</label>
-                            <input type="number" id="fullTimeDoctor" name="fullTimeDoctor" value="0" class="form-control student-number-input" oninput="calculateTotalStudents(); validateStudentInput(this);" style="background: white; border: 1px solid #ddd; font-weight: normal; text-align: left;">
+                            <input type="number" id="fullTimeDoctor" name="fullTimeDoctor" value="0" min="0" max="9999999999" class="form-control student-number-input" oninput="validateStudentInput(this); calculateTotalStudents();" style="background: white; border: 1px solid #ddd; font-weight: normal; text-align: left;">
                         </div>
                     </div>
                     <div style="display: flex; gap: 10px; margin-bottom: 15px;">
@@ -687,15 +687,15 @@
                         </div>
                         <div class="form-group" style="flex: 1; margin-bottom: 0;">
                             <label for="internationalUndergraduate">学历本科留学生数(人)</label>
-                            <input type="number" id="internationalUndergraduate" name="internationalUndergraduate" value="0" class="form-control student-number-input" oninput="calculateTotalStudents(); validateStudentInput(this);" style="background: white; border: 1px solid #ddd;">
+                            <input type="number" id="internationalUndergraduate" name="internationalUndergraduate" value="0" min="0" max="9999999999" class="form-control student-number-input" oninput="validateStudentInput(this); calculateTotalStudents();" style="background: white; border: 1px solid #ddd;">
                         </div>
                         <div class="form-group" style="flex: 1; margin-bottom: 0;">
                             <label for="internationalMaster">学历硕士留学生数(人)</label>
-                            <input type="number" id="internationalMaster" name="internationalMaster" value="0" class="form-control student-number-input" oninput="calculateTotalStudents(); validateStudentInput(this);" style="background: white; border: 1px solid #ddd;">
+                            <input type="number" id="internationalMaster" name="internationalMaster" value="0" min="0" max="9999999999" class="form-control student-number-input" oninput="validateStudentInput(this); calculateTotalStudents();" style="background: white; border: 1px solid #ddd;">
                         </div>
                         <div class="form-group" style="flex: 1; margin-bottom: 0;">
                             <label for="internationalDoctor">学历博士留学生数(人)</label>
-                            <input type="number" id="internationalDoctor" name="internationalDoctor" value="0" class="form-control student-number-input" oninput="calculateTotalStudents(); validateStudentInput(this);" style="background: white; border: 1px solid #ddd; font-weight: normal; text-align: left;">
+                            <input type="number" id="internationalDoctor" name="internationalDoctor" value="0" min="0" max="9999999999" class="form-control student-number-input" oninput="validateStudentInput(this); calculateTotalStudents();" style="background: white; border: 1px solid #ddd; font-weight: normal; text-align: left;">
                         </div>
                         <div style="flex: 1; margin-bottom: 0;"></div>
                     </div>
@@ -782,13 +782,24 @@
          * 验证学生数输入
          */
         function validateStudentInput(input) {
-            if (input.value < 0) {
-                input.value = 0;
+            // 移除非数字字符
+            let value = input.value.toString().replace(/[^\d]/g, '');
+            
+            // 限制最多10位数字
+            if (value.length > 10) {
+                value = value.slice(0, 10);
             }
-            // 确保输入为整数
-            if (input.value && !Number.isInteger(parseFloat(input.value))) {
-                input.value = Math.floor(parseFloat(input.value));
+            
+            // 转换为数字
+            let numValue = parseInt(value) || 0;
+            
+            // 确保不为负数
+            if (numValue < 0) {
+                numValue = 0;
             }
+            
+            // 更新输入值
+            input.value = numValue;
         }
         
         /**
@@ -846,8 +857,9 @@
         
         /**
          * 保存学生数据
+         * @param {boolean} forceOverwrite - 是否强制覆盖已存在的记录
          */
-        async function saveStudentData() {
+        async function saveStudentData(forceOverwrite = false) {
             // 检查是否为编辑模式
             const editRecordId = document.getElementById('editRecordId')?.value;
             const isEditMode = !!editRecordId;
@@ -909,8 +921,14 @@
                 fullTimeDoctor,
                 internationalUndergraduate,
                 internationalMaster,
-                internationalDoctor
+                internationalDoctor,
+                forceOverwrite: isEditMode ? true : forceOverwrite // 编辑模式直接覆盖，新增模式看参数
             };
+            
+            // 如果是编辑模式，添加记录ID
+            if (isEditMode) {
+                data.id = editRecordId;
+            }
             
             console.log(isEditMode ? '更新学生数据:' : '新增学生数据:', data);
             
@@ -926,6 +944,16 @@
                 });
                 
                 const result = await response.json();
+                
+                // 只在新增模式下检查是否需要用户确认覆盖
+                if (!isEditMode && result.requireConfirmation) {
+                    const userConfirmed = confirm('该测算口径记录已存在，是否覆盖原记录？');
+                    if (userConfirmed) {
+                        // 用户确认覆盖，重新调用保存函数并设置强制覆盖标志
+                        await saveStudentData(true);
+                    }
+                    return;
+                }
                 
                 if (result.success) {
                     alert(isEditMode ? '更新成功' : '保存成功');
@@ -1367,32 +1395,36 @@
                             <label for="fullTimeSpecialist">专科全日制学生数(人)</label>
                             <input type="number" id="fullTimeSpecialist" name="fullTimeSpecialist" 
                                    value="${record.full_time_specialist || 0}" 
+                                   min="0" max="9999999999"
                                    class="form-control student-number-input" 
-                                   oninput="calculateTotalStudents(); validateStudentInput(this);" 
+                                   oninput="validateStudentInput(this); calculateTotalStudents();" 
                                    style="background: white; border: 1px solid #ddd;">
                         </div>
                         <div class="form-group" style="flex: 1; margin-bottom: 0;">
                             <label for="fullTimeUndergraduate">本科全日制学生数(人)</label>
                             <input type="number" id="fullTimeUndergraduate" name="fullTimeUndergraduate" 
                                    value="${record.full_time_undergraduate || 0}" 
+                                   min="0" max="9999999999"
                                    class="form-control student-number-input" 
-                                   oninput="calculateTotalStudents(); validateStudentInput(this);" 
+                                   oninput="validateStudentInput(this); calculateTotalStudents();" 
                                    style="background: white; border: 1px solid #ddd;">
                         </div>
                         <div class="form-group" style="flex: 1; margin-bottom: 0;">
                             <label for="fullTimeMaster">硕士全日制学生数(人)</label>
                             <input type="number" id="fullTimeMaster" name="fullTimeMaster" 
                                    value="${record.full_time_master || 0}" 
+                                   min="0" max="9999999999"
                                    class="form-control student-number-input" 
-                                   oninput="calculateTotalStudents(); validateStudentInput(this);" 
+                                   oninput="validateStudentInput(this); calculateTotalStudents();" 
                                    style="background: white; border: 1px solid #ddd;">
                         </div>
                         <div class="form-group" style="flex: 1; margin-bottom: 0;">
                             <label for="fullTimeDoctor">博士全日制学生数(人)</label>
                             <input type="number" id="fullTimeDoctor" name="fullTimeDoctor" 
                                    value="${record.full_time_doctor || 0}" 
+                                   min="0" max="9999999999"
                                    class="form-control student-number-input" 
-                                   oninput="calculateTotalStudents(); validateStudentInput(this);" 
+                                   oninput="validateStudentInput(this); calculateTotalStudents();" 
                                    style="background: white; border: 1px solid #ddd; font-weight: normal; text-align: left;">
                         </div>
                     </div>
@@ -1407,24 +1439,27 @@
                             <label for="internationalUndergraduate">学历本科留学生数(人)</label>
                             <input type="number" id="internationalUndergraduate" name="internationalUndergraduate" 
                                    value="${record.international_undergraduate || 0}" 
+                                   min="0" max="9999999999"
                                    class="form-control student-number-input" 
-                                   oninput="calculateTotalStudents(); validateStudentInput(this);" 
+                                   oninput="validateStudentInput(this); calculateTotalStudents();" 
                                    style="background: white; border: 1px solid #ddd;">
                         </div>
                         <div class="form-group" style="flex: 1; margin-bottom: 0;">
                             <label for="internationalMaster">学历硕士留学生数(人)</label>
                             <input type="number" id="internationalMaster" name="internationalMaster" 
                                    value="${record.international_master || 0}" 
+                                   min="0" max="9999999999"
                                    class="form-control student-number-input" 
-                                   oninput="calculateTotalStudents(); validateStudentInput(this);" 
+                                   oninput="validateStudentInput(this); calculateTotalStudents();" 
                                    style="background: white; border: 1px solid #ddd;">
                         </div>
                         <div class="form-group" style="flex: 1; margin-bottom: 0;">
                             <label for="internationalDoctor">学历博士留学生数(人)</label>
                             <input type="number" id="internationalDoctor" name="internationalDoctor" 
                                    value="${record.international_doctor || 0}" 
+                                   min="0" max="9999999999"
                                    class="form-control student-number-input" 
-                                   oninput="calculateTotalStudents(); validateStudentInput(this);" 
+                                   oninput="validateStudentInput(this); calculateTotalStudents();" 
                                    style="background: white; border: 1px solid #ddd; font-weight: normal; text-align: left;">
                         </div>
                         <div style="flex: 1; margin-bottom: 0;"></div>

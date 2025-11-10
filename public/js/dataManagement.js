@@ -727,13 +727,22 @@ const DataManagementManager = {
     },
     
     /**
-     * 加载学校选项
+     * 加载学校选项 (只加载历史测算数据库中存在的学校)
      */
     async loadSchoolOptions(disableCache = false) {
         try {
-            const result = await DataEntryAPI.getSchools(disableCache ? { useCache: false } : {});
+            // 从calculation_history表获取有测算记录的学校列表
+            const response = await fetch('/api/schools/with-calculation-history', {
+                credentials: 'include'
+            });
             
-            if (result.success && result.schools) {
+            if (!response.ok) {
+                throw new Error('获取学校列表失败');
+            }
+            
+            const result = await response.json();
+            
+            if (result.success && result.data) {
                 const schoolDropdownList = document.getElementById('schoolDropdownList');
                 const schoolDisplay = document.querySelector('#dataSchoolNameFilter .select-display');
                 
@@ -751,8 +760,8 @@ const DataManagementManager = {
                     };
                     schoolDropdownList.appendChild(allOption);
                     
-                    // 添加具体学校选项
-                    result.schools.forEach(school => {
+                    // 添加具体学校选项 (只包含有测算历史的学校)
+                    result.data.forEach(school => {
                         const optionItem = document.createElement('div');
                         optionItem.className = 'option-item';
                         optionItem.textContent = school.school_name;
@@ -763,6 +772,8 @@ const DataManagementManager = {
                         };
                         schoolDropdownList.appendChild(optionItem);
                     });
+                    
+                    console.log('✅ 已加载', result.data.length, '所有有测算历史的学校');
                 }
                 
                 // 设置默认显示为"所有学校"
@@ -1007,7 +1018,7 @@ const DataManagementManager = {
         html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; border-right: 1px solid #dee2e6; font-size: 12px; width: 90px;">院校类别</th>';
         html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; border-right: 1px solid #dee2e6; font-size: 12px; width: 110px;">学生总人数<br/>(人)</th>';
         html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; border-right: 1px solid #dee2e6; font-size: 12px; line-height: 1.2; width: 140px;">建筑总面积(㎡)_缺额<br/>不含特殊补助</th>';
-        html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; border-right: 1px solid #dee2e6; font-size: 12px; line-height: 1.2; width: 140px;">建筑总面积(㎡)_缺额<br/>含特殊补助</th>';
+        html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; border-right: 1px solid #dee2e6; font-size: 12px; line-height: 1.2; width: 140px;">建筑总面积(㎡)_汇总</th>';
         html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; border-right: 1px solid #dee2e6; font-size: 12px; width: 100px;">学生数测算口径</th>';
         html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; border-right: 1px solid #dee2e6; font-size: 12px; width: 130px;">测算时间</th>';
         html += '<th style="padding: 6px 8px; text-align: center; font-weight: 600; color: #495057; border-right: 1px solid #dee2e6; font-size: 12px; width: 100px;">测算用户</th>';
@@ -1056,13 +1067,40 @@ const DataManagementManager = {
                 `data-user="${safeEscape(school.submitter_username || '')}"`
             ].join(' ');
             
+            // 根据选中的类型计算汇总值
+            const includesCurrent = school.include_current_area ? true : false;
+            const includesPreliminary = school.include_preliminary_area ? true : false;
+            const includesUnderConstruction = school.include_under_construction_area ? true : false;
+            
+            const teachingTotal = 
+                (includesCurrent ? (parseFloat(school.teaching_area_current) || 0) : 0) +
+                (includesPreliminary ? (parseFloat(school.teaching_area_preliminary) || 0) : 0) +
+                (includesUnderConstruction ? (parseFloat(school.teaching_area_under_construction) || 0) : 0);
+            
+            const officeTotal = 
+                (includesCurrent ? (parseFloat(school.office_area_current) || 0) : 0) +
+                (includesPreliminary ? (parseFloat(school.office_area_preliminary) || 0) : 0) +
+                (includesUnderConstruction ? (parseFloat(school.office_area_under_construction) || 0) : 0);
+            
+            const livingTotal = 
+                (includesCurrent ? (parseFloat(school.total_living_area_current) || 0) : 0) +
+                (includesPreliminary ? (parseFloat(school.total_living_area_preliminary) || 0) : 0) +
+                (includesUnderConstruction ? (parseFloat(school.total_living_area_under_construction) || 0) : 0);
+            
+            const logisticsTotal = 
+                (includesCurrent ? (parseFloat(school.logistics_area_current) || 0) : 0) +
+                (includesPreliminary ? (parseFloat(school.logistics_area_preliminary) || 0) : 0) +
+                (includesUnderConstruction ? (parseFloat(school.logistics_area_under_construction) || 0) : 0);
+            
+            const totalSum = teachingTotal + officeTotal + livingTotal + logisticsTotal;
+            
             html += `<tr style="${rowStyle} border-bottom: 1px solid #dee2e6;" onmouseover="this.style.background='#e3f2fd'" onmouseout="this.style.background='${index % 2 === 0 ? '#fff' : '#f8f9fa'}'">
                 <td style="padding: 6px 7px; border-right: 1px solid #dee2e6; font-weight: 600; font-size: 12px; text-align: center;">${school.year || '未知'}</td>
                 <td style="padding: 6px 7px; border-right: 1px solid #dee2e6; font-weight: 600; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; text-align: center;" ${schoolNameTitle}>${schoolName}</td>
                 <td style="padding: 6px 7px; border-right: 1px solid #dee2e6; text-align: center; font-size: 12px;">${schoolType}</td>
                 <td style="padding: 6px 7px; border-right: 1px solid #dee2e6; text-align: center; font-size: 12px;">${totalStudents}</td>
                 <td style="padding: 6px 7px; border-right: 1px solid #dee2e6; text-align: center; font-size: 12px;">${gapWithoutSubsidy.toFixed ? gapWithoutSubsidy.toFixed(2) : '0.00'}</td>
-                <td style="padding: 6px 7px; border-right: 1px solid #dee2e6; text-align: center; font-size: 12px;">${school.total_area_gap_with_subsidy || '0.00'}</td>
+                <td style="padding: 6px 7px; border-right: 1px solid #dee2e6; text-align: center; font-size: 12px;">${totalSum.toFixed(2)}</td>
                 <td style="padding: 6px 7px; border-right: 1px solid #dee2e6; text-align: center; font-size: 12px;">${populationScope}</td>
                 <td style="padding: 6px 7px; border-right: 1px solid #dee2e6; text-align: center; font-size: 12px;">${calculationTime}</td>
                 <td style="padding: 6px 7px; border-right: 1px solid #dee2e6; text-align: center; font-size: 12px; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" ${userNameTitle}>${userName}</td>
@@ -2034,9 +2072,10 @@ if (typeof window !== 'undefined') {
             return;
         }
         
-        // 从自定义单选框获取年份值
-        const yearDisplay = document.querySelector('#dataYearFilter .select-display');
-        const year = yearDisplay ? (yearDisplay.getAttribute('data-value') || 'all') : 'all';
+        // 从学生规划参数级联选择器获取年份和测算口径
+        const studentPlanDisplay = document.querySelector('#dataStudentPlanFilter .select-display');
+        const year = studentPlanDisplay ? studentPlanDisplay.getAttribute('data-selected-year') : null;
+        const calculationCriteria = studentPlanDisplay ? studentPlanDisplay.getAttribute('data-selected-type') : null;
         
         // 从自定义单选框获取学校值
         const schoolDisplay = document.querySelector('#dataSchoolNameFilter .select-display');
@@ -2071,7 +2110,8 @@ if (typeof window !== 'undefined') {
         try {
             // 构建请求参数
             const requestBody = {
-                year: year === 'all' ? undefined : year,
+                year: year || undefined,
+                calculationCriteria: calculationCriteria || undefined,
                 school: school === 'all' ? undefined : school,
                 user: user === 'all' ? undefined : user
             };
@@ -2103,6 +2143,73 @@ if (typeof window !== 'undefined') {
             // 恢复下载状态和解锁页面
             dataManagementManager.isBatchDownloading = false;
             dataManagementManager.unlockDataManagementPage();
+        }
+    };
+    
+    // 重置所有筛选条件
+    window.resetDataFilters = async function() {
+        // 弹出确认对话框
+        const confirmed = confirm('确定要重置所有筛选条件吗？');
+        if (!confirmed) {
+            return; // 用户取消,直接返回
+        }
+        
+        console.log('重置所有筛选条件');
+        
+        // 1. 重置学生规划参数筛选器
+        const studentPlanDisplay = document.querySelector('#dataStudentPlanFilter .select-display');
+        if (studentPlanDisplay) {
+            studentPlanDisplay.querySelector('.display-text').textContent = '所有学生规划参数';
+            studentPlanDisplay.removeAttribute('data-selected-id');
+            studentPlanDisplay.removeAttribute('data-selected-year');
+            studentPlanDisplay.removeAttribute('data-selected-type');
+        }
+        
+        // 清除学生规划参数下拉面板的选中状态
+        const yearItems = document.querySelectorAll('#studentPlanYearList .year-item');
+        yearItems.forEach(item => {
+            item.classList.remove('active', 'selected');
+        });
+        const typeItems = document.querySelectorAll('#studentPlanTypeList .type-item');
+        typeItems.forEach(item => {
+            item.classList.remove('selected');
+        });
+        
+        // 2. 重置学校筛选器
+        const schoolDisplay = document.querySelector('#dataSchoolNameFilter .select-display');
+        if (schoolDisplay) {
+            schoolDisplay.innerHTML = '<span class="display-text">所有学校</span>';
+            schoolDisplay.removeAttribute('data-value');
+        }
+        
+        // 清除学校下拉列表的选中状态
+        const schoolOptions = document.querySelectorAll('#schoolDropdownList .option-item');
+        schoolOptions.forEach(opt => opt.classList.remove('selected'));
+        
+        // 3. 重置用户筛选器
+        const userDisplay = document.querySelector('#dataUserFilter .select-display');
+        if (userDisplay) {
+            userDisplay.innerHTML = '<span class="display-text">请选择测算用户</span>';
+        }
+        
+        // 取消所有用户复选框的选中状态
+        const userCheckboxes = document.querySelectorAll('#userDropdownList input[type="checkbox"]');
+        userCheckboxes.forEach(cb => {
+            cb.checked = false;
+        });
+        
+        showMessage('筛选条件已重置,正在查询所有记录...', 'success');
+        
+        // 4. 自动执行查找,显示所有记录
+        try {
+            if (dataManagementManager && typeof dataManagementManager.searchDataRecords === 'function') {
+                await dataManagementManager.searchDataRecords();
+            } else if (typeof searchDataRecords === 'function') {
+                await searchDataRecords();
+            }
+        } catch (error) {
+            console.error('自动查询失败:', error);
+            showMessage('重置成功,但查询失败: ' + error.message, 'warning');
         }
     };
 }

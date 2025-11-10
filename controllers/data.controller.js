@@ -218,7 +218,8 @@ exports.savePlannedStudents = async (req, res) => {
             fullTimeDoctor,
             internationalUndergraduate,
             internationalMaster,
-            internationalDoctor
+            internationalDoctor,
+            forceOverwrite // 新增参数：是否强制覆盖
         } = req.body;
         
         const username = req.session.username || req.session.user?.username;
@@ -227,7 +228,8 @@ exports.savePlannedStudents = async (req, res) => {
             schoolName,
             year,
             calculationCriteria,
-            username
+            username,
+            forceOverwrite
         });
         
         const pool = await getPool();
@@ -255,7 +257,17 @@ exports.savePlannedStudents = async (req, res) => {
         );
         
         if (existingRows.length > 0) {
-            // 更新现有记录
+            // 如果记录已存在且没有设置强制覆盖标志，返回需要确认的响应
+            if (!forceOverwrite) {
+                return res.json({
+                    success: false,
+                    requireConfirmation: true,
+                    message: '该测算口径记录已存在',
+                    existingId: existingRows[0].id
+                });
+            }
+            
+            // 用户已确认覆盖，执行更新操作
             const updateQuery = `
                 UPDATE planned_student_numbers SET
                     full_time_specialist = ?,

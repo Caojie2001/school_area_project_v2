@@ -260,6 +260,11 @@ exports.getLatestSchoolRecords = async (req, res) => {
         let userFilter = user && user !== 'all' ? user : null;
         let criteriaFilter = calculationCriteria && calculationCriteria !== 'all' ? calculationCriteria : null;
         
+        // 如果 userFilter 是逗号分隔的字符串,转换为数组
+        if (userFilter && typeof userFilter === 'string' && userFilter.includes(',')) {
+            userFilter = userFilter.split(',').map(u => u.trim());
+        }
+        
         const userRole = req.session.user.role;
         const username = req.session.user.username;
         const userSchoolName = req.session.user.school_name;
@@ -348,6 +353,43 @@ exports.getStudentDataSources = async (req, res) => {
             success: false, 
             error: '获取学生数数据来源列表失败',
             message: error.message 
+        });
+    }
+};
+
+/**
+ * 获取有测算历史记录的学校列表
+ * GET /api/schools/with-calculation-history
+ */
+/**
+ * 获取在历史测算中存在的学校列表
+ * GET /api/schools/with-calculation-history
+ */
+exports.getSchoolsWithCalculationHistory = async (req, res) => {
+    try {
+        const { getPool } = require('../config/database');
+        const pool = await getPool();  // getPool 是异步函数，需要 await
+        
+        // 从 calculation_history 和 school_registry 表中获取有历史测算记录的学校
+        const [rows] = await pool.execute(
+            `SELECT DISTINCT sr.school_name 
+             FROM calculation_history ch
+             JOIN school_registry sr ON ch.school_registry_id = sr.id
+             ORDER BY sr.school_name ASC`
+        );
+        
+        res.json({
+            success: true,
+            data: rows,
+            count: rows.length,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('获取历史测算学校列表失败:', error);
+        res.status(500).json({
+            success: false,
+            error: '获取历史测算学校列表失败',
+            message: error.message
         });
     }
 };

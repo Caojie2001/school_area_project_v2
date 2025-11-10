@@ -20,11 +20,21 @@ function loadSSLConfig() {
         if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
             sslOptions = {
                 key: fs.readFileSync(keyPath),
-                cert: fs.readFileSync(certPath)
+                cert: fs.readFileSync(certPath),
+                minVersion: 'TLSv1.2',  // 最低使用 TLS 1.2,禁用不安全的 TLS 1.0 和 1.1
+                maxVersion: 'TLSv1.3',  // 最高使用 TLS 1.3
+                ciphers: [
+                    'TLS_AES_128_GCM_SHA256',
+                    'TLS_AES_256_GCM_SHA384',
+                    'TLS_CHACHA20_POLY1305_SHA256',
+                    'ECDHE-RSA-AES128-GCM-SHA256',
+                    'ECDHE-RSA-AES256-GCM-SHA384'
+                ].join(':'),
+                honorCipherOrder: true  // 优先使用服务器端的加密套件顺序
             };
-            console.log('SSL证书加载成功');
+            console.log('SSL证书加载成功 (TLS 1.2-1.3)');
         } else {
-            console.warn('SSL证书文件不存在，将仅启用HTTP服务器');
+            console.warn('SSL证书文件不存在,将仅启用HTTP服务器');
             console.warn(`检查路径: ${keyPath}, ${certPath}`);
         }
     } catch (error) {

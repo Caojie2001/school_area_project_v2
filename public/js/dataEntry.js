@@ -412,7 +412,7 @@ const DataEntryManager = {
         console.log('开始重置表单，保留学校:', savedSchool);
         
         // 重置所有数字输入字段
-        const inputs = document.querySelectorAll('#page-data-entry input[type="number"]');
+        const inputs = document.querySelectorAll('input[type="number"]');
         inputs.forEach(input => {
             input.value = '0';
         });
@@ -757,8 +757,12 @@ const DataEntryManager = {
     clearPageContent() {
         console.log('正在清空高校测算页面内容...');
         
+        // 获取当前用户信息
+        const currentUser = typeof AuthManager !== 'undefined' ? AuthManager.getCurrentUser() : null;
+        const isSchoolUser = currentUser && currentUser.role === 'school';
+        
         // 重置所有数字输入字段
-        const inputs = document.querySelectorAll('#page-data-entry input[type="number"]');
+        const inputs = document.querySelectorAll('input[type="number"]');
         inputs.forEach(input => {
             input.value = '0';
         });
@@ -766,10 +770,8 @@ const DataEntryManager = {
         // 重置学校选择（学校用户不清空学校名称）
         const schoolSelect = document.getElementById('schoolName');
         if (schoolSelect) {
-            const currentUser = typeof AuthManager !== 'undefined' ? AuthManager.getCurrentUser() : null;
-            
             // 如果是学校用户，保留当前学校名称；否则清空
-            if (currentUser && currentUser.role === 'school' && currentUser.school_name) {
+            if (isSchoolUser && currentUser.school_name) {
                 // 学校用户保持学校名称不变
                 schoolSelect.value = currentUser.school_name;
                 console.log('学校用户清空页面：保留学校名称', currentUser.school_name);
@@ -887,19 +889,19 @@ const DataEntryManager = {
         }
         
         // 清空任何可能存在的结果表格
-        const resultTables = document.querySelectorAll('#page-data-entry .results-table, #page-data-entry .analysis-table');
+        const resultTables = document.querySelectorAll('.results-table, .analysis-table');
         resultTables.forEach(table => {
             table.remove();
         });
         
         // 清空统计信息显示区域（但不包括进度条）
-        const statisticsElements = document.querySelectorAll('#page-data-entry .statistics-display, #page-data-entry .calculation-summary');
+        const statisticsElements = document.querySelectorAll('.statistics-display, .calculation-summary');
         statisticsElements.forEach(element => {
             element.remove();
         });
         
         // 清空特殊补助汇总信息
-        const subsidySummaries = document.querySelectorAll('#page-data-entry .subsidy-summary');
+        const subsidySummaries = document.querySelectorAll('.subsidy-summary');
         subsidySummaries.forEach(summary => {
             summary.remove();
         });
@@ -926,8 +928,12 @@ const DataEntryManager = {
             return; // 用户取消，不执行清空操作
         }
         
+        // 获取当前用户信息
+        const currentUser = typeof AuthManager !== 'undefined' ? AuthManager.getCurrentUser() : null;
+        const isSchoolUser = currentUser && currentUser.role === 'school';
+        
         // 重置所有数字输入字段
-        const inputs = document.querySelectorAll('#page-data-entry input[type="number"]');
+        const inputs = document.querySelectorAll('input[type="number"]');
         inputs.forEach(input => {
             input.value = '0';
         });
@@ -935,10 +941,8 @@ const DataEntryManager = {
         // 重置学校选择（学校用户不清空学校名称）
         const schoolSelect = document.getElementById('schoolName');
         if (schoolSelect) {
-            const currentUser = typeof AuthManager !== 'undefined' ? AuthManager.getCurrentUser() : null;
-            
             // 如果是学校用户，保留当前学校名称；否则清空
-            if (currentUser && currentUser.role === 'school' && currentUser.school_name) {
+            if (isSchoolUser && currentUser.school_name) {
                 // 学校用户保持学校名称不变
                 schoolSelect.value = currentUser.school_name;
                 console.log('学校用户重置表单：保留学校名称', currentUser.school_name);
@@ -964,10 +968,8 @@ const DataEntryManager = {
         // 重置学校类型显示（学校用户保留学校类型信息）
         const schoolTypeDisplay = document.getElementById('schoolTypeDisplay');
         if (schoolTypeDisplay) {
-            const currentUser = typeof AuthManager !== 'undefined' ? AuthManager.getCurrentUser() : null;
-            
             // 如果是学校用户且选择了学校，触发学校变更事件来更新学校类型
-            if (currentUser && currentUser.role === 'school' && currentUser.school_name) {
+            if (isSchoolUser && currentUser.school_name) {
                 // 触发学校选择器的change事件来更新学校类型
                 const schoolSelect = document.getElementById('schoolName');
                 if (schoolSelect) {

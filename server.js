@@ -3,6 +3,7 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
+const os = require('os');
 
 // 引入数据库相关模块
 require('dotenv').config();
@@ -38,6 +39,22 @@ const { loadCalculationStandards } = require('./config/utils/calculator');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HTTPS_PORT = process.env.HTTPS_PORT || 3443;
+
+// ============================================
+// 获取本机IP地址的辅助函数
+// ============================================
+function getLocalIPAddress() {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+            // 跳过内部地址和非IPv4地址
+            if (iface.family === 'IPv4' && !iface.internal) {
+                return iface.address;
+            }
+        }
+    }
+    return 'localhost';
+}
 
 // ============================================
 // SSL证书和安全配置
@@ -131,6 +148,9 @@ async function startServer() {
     try {
         console.log('正在初始化数据库连接...');
         
+        // 获取本机IP地址
+        const localIP = getLocalIPAddress();
+        
         // 测试数据库连接
         const isConnected = await testConnection();
         if (!isConnected) {
@@ -144,23 +164,27 @@ async function startServer() {
             await loadCalculationStandards();
         }
         
-        // 启动HTTP服务器
-        app.listen(PORT, () => {
-            console.log(`HTTP服务器运行在 http://localhost:${PORT}`);
+        // 启动HTTP服务器 - 监听所有网络接口以支持内网访问
+        app.listen(PORT, '0.0.0.0', () => {
+            console.log(`\n🚀 HTTP服务器已启动:`);
+            console.log(`  ✓ 本地访问: http://localhost:${PORT}`);
+            console.log(`  ✓ 内网访问: http://${localIP}:${PORT}`);
             if (isConnected) {
-                console.log('MySQL数据库连接正常，数据将被持久化保存');
+                console.log('  ✓ MySQL数据库连接正常，数据将被持久化保存');
             } else {
-                console.log('数据库未连接，数据将不会被持久化保存');
+                console.log('  ⚠ 数据库未连接，数据将不会被持久化保存');
             }
         });
         
-        // 如果SSL证书可用，启动HTTPS服务器
+        // 如果SSL证书可用，启动HTTPS服务器 - 监听所有网络接口
         if (sslOptions) {
             const httpsServer = https.createServer(sslOptions, app);
-            httpsServer.listen(HTTPS_PORT, () => {
-                console.log(`HTTPS服务器运行在 https://localhost:${HTTPS_PORT}`);
+            httpsServer.listen(HTTPS_PORT, '0.0.0.0', () => {
+                console.log(`\n🔒 HTTPS服务器已启动:`);
+                console.log(`  ✓ 本地访问: https://localhost:${HTTPS_PORT}`);
+                console.log(`  ✓ 内网访问: https://${localIP}:${HTTPS_PORT}`);
                 if (process.env.HTTPS_FORCE_REDIRECT === 'true') {
-                    console.log('强制HTTPS重定向已启用，所有HTTP请求将重定向到HTTPS');
+                    console.log('  ✓ 强制HTTPS重定向已启用');
                 }
             });
         }

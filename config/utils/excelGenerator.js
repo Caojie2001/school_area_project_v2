@@ -48,13 +48,49 @@ function generateFormattedResultSheet(school) {
         specialSubsidyTotalArea = toNumber(school.special_subsidy_total);
     }
 
-    // 当前面积
-    const teachingCurrent = toNumber(school.teaching_area_current);
-    const officeCurrent = toNumber(school.office_area_current);
-    const livingCurrent = toNumber(school.total_living_area_current);
-    const dormitoryCurrent = toNumber(school.dormitory_area_current);
-    const otherLivingCurrent = toNumber(school.other_living_area_current);
-    const logisticsCurrent = toNumber(school.logistics_area_current);
+    // 汇总面积（根据选中的类型计算）
+    const includesCurrent = school.include_current_area ? true : false;
+    const includesPreliminary = school.include_preliminary_area ? true : false;
+    const includesUnderConstruction = school.include_under_construction_area ? true : false;
+    
+    // 调试日志
+    console.log('🔍 excelGenerator - 学校:', school.school_name);
+    console.log('  选中类型:', { includesCurrent, includesPreliminary, includesUnderConstruction });
+    console.log('  数据库值 - 教学:', {
+        current: school.teaching_area_current,
+        preliminary: school.teaching_area_preliminary,
+        under_construction: school.teaching_area_under_construction
+    });
+    
+    const teachingTotal = 
+        (includesCurrent ? toNumber(school.teaching_area_current) : 0) +
+        (includesPreliminary ? toNumber(school.teaching_area_preliminary) : 0) +
+        (includesUnderConstruction ? toNumber(school.teaching_area_under_construction) : 0);
+    
+    const officeTotal = 
+        (includesCurrent ? toNumber(school.office_area_current) : 0) +
+        (includesPreliminary ? toNumber(school.office_area_preliminary) : 0) +
+        (includesUnderConstruction ? toNumber(school.office_area_under_construction) : 0);
+    
+    const livingTotal = 
+        (includesCurrent ? toNumber(school.total_living_area_current) : 0) +
+        (includesPreliminary ? toNumber(school.total_living_area_preliminary) : 0) +
+        (includesUnderConstruction ? toNumber(school.total_living_area_under_construction) : 0);
+    
+    const dormitoryTotal = 
+        (includesCurrent ? toNumber(school.dormitory_area_current) : 0) +
+        (includesPreliminary ? toNumber(school.dormitory_area_preliminary) : 0) +
+        (includesUnderConstruction ? toNumber(school.dormitory_area_under_construction) : 0);
+    
+    const otherLivingTotal = 
+        (includesCurrent ? toNumber(school.other_living_area_current) : 0) +
+        (includesPreliminary ? toNumber(school.other_living_area_preliminary) : 0) +
+        (includesUnderConstruction ? toNumber(school.other_living_area_under_construction) : 0);
+    
+    const logisticsTotal = 
+        (includesCurrent ? toNumber(school.logistics_area_current) : 0) +
+        (includesPreliminary ? toNumber(school.logistics_area_preliminary) : 0) +
+        (includesUnderConstruction ? toNumber(school.logistics_area_under_construction) : 0);
 
     // 应配面积
     const teachingRequired = toNumber(school.teaching_area_required);
@@ -72,7 +108,7 @@ function generateFormattedResultSheet(school) {
     const totalLivingAreaGap = toNumber(school.total_living_area_gap) || (dormitoryAreaGap + otherLivingAreaGap);
     const logisticsAreaGap = toNumber(school.logistics_area_gap);
 
-    const subtotalCurrent = teachingCurrent + officeCurrent + livingCurrent + logisticsCurrent;
+    const subtotalTotal = teachingTotal + officeTotal + livingTotal + logisticsTotal;
     const subtotalRequired = teachingRequired + officeRequired + livingRequired + logisticsRequired;
 
     const totalAreaGapWithoutSubsidy = toNumber(school.total_area_gap_without_subsidy) || (teachingAreaGap + officeAreaGap + totalLivingAreaGap + logisticsAreaGap);
@@ -127,13 +163,13 @@ function generateFormattedResultSheet(school) {
         ['测算结果'],
         ['', '建筑面积(m²)_汇总', '建筑面积(m²)_测算', '建筑面积(m²)_缺额'],
         ['用房类型', 'A', 'B', 'B-A'],
-        ['教学及辅助用房', formatAreaToTwoDecimals(teachingCurrent), formatAreaToTwoDecimals(teachingRequired), formatAreaToTwoDecimals(teachingAreaGap)],
-        ['办公用房', formatAreaToTwoDecimals(officeCurrent), formatAreaToTwoDecimals(officeRequired), formatAreaToTwoDecimals(officeAreaGap)],
-        ['生活配套用房', formatAreaToTwoDecimals(livingCurrent), formatAreaToTwoDecimals(livingRequired), formatAreaToTwoDecimals(totalLivingAreaGap)],
-        ['其中:学生宿舍', formatAreaToTwoDecimals(dormitoryCurrent), formatAreaToTwoDecimals(dormitoryRequired), formatAreaToTwoDecimals(dormitoryAreaGap)],
-        ['其中:其他生活用房', formatAreaToTwoDecimals(otherLivingCurrent), formatAreaToTwoDecimals(otherLivingRequired), formatAreaToTwoDecimals(otherLivingAreaGap)],
-        ['后勤辅助用房', formatAreaToTwoDecimals(logisticsCurrent), formatAreaToTwoDecimals(logisticsRequired), formatAreaToTwoDecimals(logisticsAreaGap)],
-        ['小计', formatAreaToTwoDecimals(subtotalCurrent), formatAreaToTwoDecimals(subtotalRequired), formatAreaToTwoDecimals(totalAreaGapWithoutSubsidy)],
+        ['教学及辅助用房', formatAreaToTwoDecimals(teachingTotal), formatAreaToTwoDecimals(teachingRequired), formatAreaToTwoDecimals(teachingAreaGap)],
+        ['办公用房', formatAreaToTwoDecimals(officeTotal), formatAreaToTwoDecimals(officeRequired), formatAreaToTwoDecimals(officeAreaGap)],
+        ['生活配套用房', formatAreaToTwoDecimals(livingTotal), formatAreaToTwoDecimals(livingRequired), formatAreaToTwoDecimals(totalLivingAreaGap)],
+        ['其中:学生宿舍', formatAreaToTwoDecimals(dormitoryTotal), formatAreaToTwoDecimals(dormitoryRequired), formatAreaToTwoDecimals(dormitoryAreaGap)],
+        ['其中:其他生活用房', formatAreaToTwoDecimals(otherLivingTotal), formatAreaToTwoDecimals(otherLivingRequired), formatAreaToTwoDecimals(otherLivingAreaGap)],
+        ['后勤辅助用房', formatAreaToTwoDecimals(logisticsTotal), formatAreaToTwoDecimals(logisticsRequired), formatAreaToTwoDecimals(logisticsAreaGap)],
+        ['小计', formatAreaToTwoDecimals(subtotalTotal), formatAreaToTwoDecimals(subtotalRequired), formatAreaToTwoDecimals(totalAreaGapWithoutSubsidy)],
         [''],
         ['建筑总面积(m²)_缺额_不含特殊补助', '', 'C', formatAreaToTwoDecimals(totalAreaGapWithoutSubsidy)],
         ['特殊补助建筑面积(m²)', '', 'D', formatAreaToTwoDecimals(specialSubsidyTotalArea)],

@@ -410,30 +410,48 @@ async function downloadCalculationResults(req, res) {
             console.log(`生成测算结果文件 ${i + 1}/${results.length}:`, resultFileName);
         }
         
-        // 生成汇总Excel（简化版，保留核心数据）
+        // 生成汇总Excel(与data-management保持一致的结构)
         const summaryHeaders = [
-            '单位/学校名称', '院校类别', '测算年份', '测算口径', '计入测算的建筑面积', '测算用户',
-            '教学及辅助用房(m²)_现状', '办公用房(m²)_现状', '生活用房(m²)_现状', '学生宿舍(m²)_现状',
-            '其他生活用房(m²)_现状', '后勤辅助用房(m²)_现状', '建筑总面积(m²)_现状',
-            '教学及辅助用房(m²)_测算', '办公用房(m²)_测算', '生活用房(m²)_测算', '学生宿舍(m²)_测算',
-            '其他生活用房(m²)_测算', '后勤辅助用房(m²)_测算', '建筑总面积(m²)_测算',
-            '教学及辅助用房(m²)_缺额', '办公用房(m²)_缺额', '生活用房(m²)_缺额', '学生宿舍(m²)_缺额',
-            '其他生活用房(m²)_缺额', '后勤辅助用房(m²)_缺额',
-            '建筑总面积(m²)_缺额_不含特殊补助', '建筑总面积(m²)_缺额_含特殊补助',
-            '特殊补助项目数', '特殊补助面积(m²)',
-            '专科生(人)', '本科生(人)', '硕士生(人)', '博士生(人)', '全日制总数(人)',
-            '本科留学生(人)', '硕士留学生(人)', '博士留学生(人)', '留学生总数(人)', '学生总人数(人)'
+            '单位/学校(机构)名称(章)', '院校类别', '测算年份', '测算口径_合并', '计入测算的建筑面积', '测算用户',
+            '教学及辅助用房面积(㎡)_现状', '办公用房面积(㎡)_现状', '生活用房总面积(㎡)_现状', '其中:学生宿舍面积(㎡)_现状',
+            '其中:其他生活用房面积(㎡)_现状', '后勤辅助用房面积(㎡)_现状', '建筑总面积(㎡)_现状',
+            '教学及辅助用房面积(㎡)_拟建成_前期', '办公用房面积(㎡)_拟建成_前期', '生活用房总面积(㎡)_拟建成_前期', '其中:学生宿舍面积(㎡)_拟建成_前期',
+            '其中:其他生活用房面积(㎡)_拟建成_前期', '后勤辅助用房面积(㎡)_拟建成_前期', '建筑总面积(㎡)_拟建成_前期',
+            '教学及辅助用房面积(㎡)_拟建成_在建(含竣工)', '办公用房面积(㎡)_拟建成_在建(含竣工)', '生活用房总面积(㎡)_拟建成_在建(含竣工)', '其中:学生宿舍面积(㎡)_拟建成_在建(含竣工)',
+            '其中:其他生活用房面积(㎡)_拟建成_在建(含竣工)', '后勤辅助用房面积(㎡)_拟建成_在建(含竣工)', '建筑总面积(㎡)_拟建成_在建(含竣工)',
+            '教学及辅助用房面积(㎡)_汇总', '办公用房面积(㎡)_汇总', '生活用房总面积(㎡)_汇总', '其中:学生宿舍面积(㎡)_汇总',
+            '其中:其他生活用房面积(㎡)_汇总', '后勤辅助用房面积(㎡)_汇总', '建筑总面积(㎡)_汇总',
+            '教学及辅助用房面积(㎡)_测算', '办公用房面积(㎡)_测算', '生活用房总面积(㎡)_测算', '其中:学生宿舍面积(㎡)_测算',
+            '其中:其他生活用房面积(㎡)_测算', '后勤辅助用房面积(㎡)_测算', '建筑总面积(㎡)_测算',
+            '教学及辅助用房面积(㎡)_缺额', '办公用房面积(㎡)_缺额', '生活用房总面积(㎡)_缺额', '其中:学生宿舍面积(㎡)_缺额',
+            '其中:其他生活用房面积(㎡)_缺额', '后勤辅助用房面积(㎡)_缺额',
+            '建筑总面积(㎡)_缺额_不含特殊补助', '建筑总面积(㎡)_缺额_含特殊补助',
+            '总间数(间)_特殊用房补助', '建筑总面积(㎡)_特殊用房补助',
+            '专科全日制学生数(人)', '本科全日制学生数(人)', '硕士全日制学生数(人)', '博士全日制学生数(人)', '全日制学生总数(人)',
+            '学历本科留学生数(人)', '学历硕士留学生数(人)', '学历博士留学生数(人)', '学历留学生总数(人)', '学生总人数(人)'
         ];
         
         const summaryData = [summaryHeaders];
         
-        results.forEach(item => {
+        results.forEach((item, index) => {
             const result = item.result;
             const studentData = item.studentData;
             const areaTypes = item.areaTypes || [];
             const calculationData = item.calculationData || {};
             const currentAreas = calculationData.currentAreas || {};
+            const preliminaryAreas = calculationData.preliminaryAreas || {};
+            const underConstructionAreas = calculationData.underConstructionAreas || {};
             
+            // 调试日志
+            console.log(`处理第 ${index + 1} 条数据:`, {
+                areaTypes,
+                currentAreas,
+                preliminaryAreas,
+                underConstructionAreas
+            });
+            
+            // 前端已经根据areaTypes过滤了数据，未选中的已经是0
+            // 现状面积
             const teachingCurrent = currentAreas.teaching || 0;
             const officeCurrent = currentAreas.office || 0;
             const livingCurrent = currentAreas.living || 0;
@@ -442,6 +460,34 @@ async function downloadCalculationResults(req, res) {
             const logisticsCurrent = currentAreas.logistics || 0;
             const totalCurrent = teachingCurrent + officeCurrent + livingCurrent + logisticsCurrent;
             
+            // 拟建成_前期面积
+            const teachingPreliminary = preliminaryAreas.teaching || 0;
+            const officePreliminary = preliminaryAreas.office || 0;
+            const livingPreliminary = preliminaryAreas.living || 0;
+            const dormitoryPreliminary = preliminaryAreas.dormitory || 0;
+            const otherLivingPreliminary = preliminaryAreas.otherLiving || 0;
+            const logisticsPreliminary = preliminaryAreas.logistics || 0;
+            const totalPreliminary = teachingPreliminary + officePreliminary + livingPreliminary + logisticsPreliminary;
+            
+            // 拟建成_在建(含竣工)面积
+            const teachingUnderConstruction = underConstructionAreas.teaching || 0;
+            const officeUnderConstruction = underConstructionAreas.office || 0;
+            const livingUnderConstruction = underConstructionAreas.living || 0;
+            const dormitoryUnderConstruction = underConstructionAreas.dormitory || 0;
+            const otherLivingUnderConstruction = underConstructionAreas.otherLiving || 0;
+            const logisticsUnderConstruction = underConstructionAreas.logistics || 0;
+            const totalUnderConstruction = teachingUnderConstruction + officeUnderConstruction + livingUnderConstruction + logisticsUnderConstruction;
+            
+            // 汇总面积(现状+前期+在建，未选中的已经是0)
+            const teachingTotal = teachingCurrent + teachingPreliminary + teachingUnderConstruction;
+            const officeTotal = officeCurrent + officePreliminary + officeUnderConstruction;
+            const livingTotal = livingCurrent + livingPreliminary + livingUnderConstruction;
+            const dormitoryTotal = dormitoryCurrent + dormitoryPreliminary + dormitoryUnderConstruction;
+            const otherLivingTotal = otherLivingCurrent + otherLivingPreliminary + otherLivingUnderConstruction;
+            const logisticsTotal = logisticsCurrent + logisticsPreliminary + logisticsUnderConstruction;
+            const totalSum = teachingTotal + officeTotal + livingTotal + logisticsTotal;
+            
+            // 测算面积
             const teachingRequired = result['总应配教学及辅助用房(A)'] || 0;
             const officeRequired = result['总应配办公用房(B)'] || 0;
             const dormitoryRequired = result['总应配学生宿舍(C1)'] || 0;
@@ -450,6 +496,7 @@ async function downloadCalculationResults(req, res) {
             const logisticsRequired = result['总应配后勤辅助用房(D)'] || 0;
             const totalRequired = teachingRequired + officeRequired + livingRequired + logisticsRequired;
             
+            // 缺额面积
             const teachingGap = result['教学及辅助用房缺口(A)'] || 0;
             const officeGap = result['办公用房缺口(B)'] || 0;
             const dormitoryGap = result['学生宿舍缺口(C1)'] || 0;
@@ -459,6 +506,7 @@ async function downloadCalculationResults(req, res) {
             const totalGapWithoutSpecial = result['建筑面积总缺口（不含特殊补助）'] || 0;
             const totalGapWithSpecial = result['建筑面积总缺口（含特殊补助）'] || 0;
             
+            // 特殊补助
             const specialSubsidyArea = result['特殊补助总面积'] || 0;
             const specialSubsidyCount = (result['特殊补助明细'] || []).length;
             
@@ -477,16 +525,33 @@ async function downloadCalculationResults(req, res) {
             const row = [
                 schoolName, cleanSchoolType(schoolType), item.year, item.criteria,
                 areaTypes.join('、'), displayNameToUse,
+                // 现状面积(7列)
                 teachingCurrent.toFixed(2), officeCurrent.toFixed(2), livingCurrent.toFixed(2),
                 dormitoryCurrent.toFixed(2), otherLivingCurrent.toFixed(2), logisticsCurrent.toFixed(2),
                 totalCurrent.toFixed(2),
+                // 拟建成_前期面积(7列)
+                teachingPreliminary.toFixed(2), officePreliminary.toFixed(2), livingPreliminary.toFixed(2),
+                dormitoryPreliminary.toFixed(2), otherLivingPreliminary.toFixed(2), logisticsPreliminary.toFixed(2),
+                totalPreliminary.toFixed(2),
+                // 拟建成_在建(含竣工)面积(7列)
+                teachingUnderConstruction.toFixed(2), officeUnderConstruction.toFixed(2), livingUnderConstruction.toFixed(2),
+                dormitoryUnderConstruction.toFixed(2), otherLivingUnderConstruction.toFixed(2), logisticsUnderConstruction.toFixed(2),
+                totalUnderConstruction.toFixed(2),
+                // 汇总面积(7列)
+                teachingTotal.toFixed(2), officeTotal.toFixed(2), livingTotal.toFixed(2),
+                dormitoryTotal.toFixed(2), otherLivingTotal.toFixed(2), logisticsTotal.toFixed(2),
+                totalSum.toFixed(2),
+                // 测算面积(7列)
                 teachingRequired.toFixed(2), officeRequired.toFixed(2), livingRequired.toFixed(2),
                 dormitoryRequired.toFixed(2), otherLivingRequired.toFixed(2), logisticsRequired.toFixed(2),
                 totalRequired.toFixed(2),
+                // 缺额面积(8列)
                 teachingGap.toFixed(2), officeGap.toFixed(2), livingGap.toFixed(2),
                 dormitoryGap.toFixed(2), otherLivingGap.toFixed(2), logisticsGap.toFixed(2),
                 totalGapWithoutSpecial.toFixed(2), totalGapWithSpecial.toFixed(2),
+                // 特殊补助(2列)
                 specialSubsidyCount, specialSubsidyArea.toFixed(2),
+                // 学生数据(10列)
                 specialist, undergraduate, master, doctor, fullTimeTotal,
                 intlUndergrad, intlMaster, intlDoctor, intlTotal, studentTotal
             ];
